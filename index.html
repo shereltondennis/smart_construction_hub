@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Construction Hub</title>
+  <meta name="description" content="A connected construction management workspace for projects, clients, payments and materials." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <img class="brand-logo" src="logo.png" alt="Smart Construction Hub company logo" />
+        <div class="brand-copy">
+          <strong>SMART<br />CONSTRUCTION HUB</strong>
+          <small>BUILDING YOUR HOME UP TO STANDARD</small>
+        </div>
+      </div>
+      <div class="workspace-label">WORKSPACE <span class="status-dot"></span></div>
+      <nav class="nav-list" aria-label="Primary navigation">
+        <button class="nav-item active" data-view="overview"><span class="nav-icon">▦</span>Overview</button>
+        <button class="nav-item" data-view="projects"><span class="nav-icon">▱</span>Projects <b>12</b></button>
+        <button class="nav-item" data-view="clients"><span class="nav-icon">◉</span>Clients</button>
+        <button class="nav-item" data-view="estimates"><span class="nav-icon">≡</span>Estimates <b class="alert-count">5</b></button>
+        <button class="nav-item" data-view="inventory"><span class="nav-icon">▤</span>Materials</button>
+        <button class="nav-item" data-view="payments"><span class="nav-icon">↗</span>Payments</button>
+        <button class="nav-item" data-view="documents"><span class="nav-icon">□</span>Documents</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sync-card"><div class="sync-icon">✓</div><div><strong>All data synced</strong><span>Last synced 2 min ago</span></div></div>
+        <button class="nav-item"><span class="nav-icon">⚙</span>Settings</button>
+        <div class="profile"><div class="avatar avatar-dark">AM</div><div><strong>Alex Morgan</strong><span>Administrator</span></div><span class="more">•••</span></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation">☰</button>
+        <div class="breadcrumb"><span>Workspace</span><i>/</i><strong id="breadcrumb-title">Overview</strong></div>
+        <div class="top-actions">
+          <button class="icon-button" aria-label="Search" id="focus-search">⌕</button>
+          <button class="icon-button notification" aria-label="Notifications">♢<span></span></button>
+          <div class="top-divider"></div>
+          <div class="avatar avatar-orange">AM</div>
+        </div>
+      </header>
+
+      <div class="content-wrap" id="app-content"></div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button class="modal-close" id="modal-close" aria-label="Close">×</button>
+      <div class="modal-eyebrow">NEW RECORD</div>
+      <h2 id="modal-title">Add project</h2>
+      <p class="modal-copy">Create a connected project record. You can attach plans, estimates and payments next.</p>
+      <form id="project-form">
+        <div class="form-grid">
+          <label>Project name<input name="name" required placeholder="e.g. Riverside 3-Bedroom Home" /></label>
+          <label>Client<select name="client"><option>John Doe</option><option>Amara Mensah</option><option>David Kimani</option></select></label>
+          <label>Type of work<select name="type"><option>New construction</option><option>Renovation</option><option>Roofing</option><option>Interior finishing</option></select></label>
+          <label>Contract amount<input name="amount" required type="number" min="0" placeholder="25000" /></label>
+        </div>
+        <div class="form-actions"><button type="button" class="button button-ghost" id="form-cancel">Cancel</button><button class="button button-primary" type="submit">Create project <span>→</span></button></div>
+      </form>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="client-modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="client-modal-title">
+      <button class="modal-close" id="client-modal-close" aria-label="Close">×</button>
+      <div class="modal-eyebrow">NEW RECORD</div>
+      <h2 id="client-modal-title">Add client</h2>
+      <p class="modal-copy">Add a client and keep their projects and contact details connected.</p>
+      <form id="client-form">
+        <div class="form-grid">
+          <label>Full name<input name="name" required placeholder="e.g. Grace Johnson" /></label>
+          <label>Phone number<input name="phone" required type="tel" placeholder="+231 888 000 000" /></label>
+          <label>Email<input name="email" type="email" placeholder="client@example.com" /></label>
+          <label>Client location<input name="location" required placeholder="e.g. Sinkor, Monrovia" /></label>
+          <label>Project name<input name="projectName" required placeholder="e.g. Johnson Family Home" /></label>
+          <label>Type of work<select name="type" required><option>New construction</option><option>Renovation</option><option>Roofing</option><option>Interior finishing</option><option>Other</option></select></label>
+          <label>Work location<input name="workLocation" required placeholder="Where will the work take place?" /></label>
+          <label>Contract amount<input name="amount" required type="number" min="0" step="0.01" placeholder="25000" /></label>
+          <label>Start date<input name="startDate" type="date" /></label>
+          <label>Expected completion<input name="completionDate" type="date" /></label>
+          <label class="form-wide">Project notes<textarea name="notes" rows="3" placeholder="Scope, dimensions, materials, or other client requirements..."></textarea></label>
+        </div>
+        <div class="form-actions"><button type="button" class="button button-ghost" id="client-form-cancel">Cancel</button><button class="button button-primary" type="submit">Add client <span>→</span></button></div>
+      </form>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="estimate-modal-backdrop" hidden>
+    <section class="modal quotation-modal" role="dialog" aria-modal="true" aria-labelledby="estimate-modal-title">
+      <button class="modal-close" id="estimate-modal-close" aria-label="Close">×</button>
+      <div class="quotation-header"><img src="logo.png" alt="Smart Construction Hub logo" /><div><strong>SMART CONSTRUCTION HUB</strong><span>BUILDING YOUR HOME UP TO STANDARD</span><small>Tissue Factory, Bernard Farm, Paynesville City, Monrovia Liberia</small><small>WhatsApp: +231 888 827 060 | Email: info.smartconstructionhub@gmail.com</small></div></div>
+      <div class="quotation-title"><div class="modal-eyebrow">CONSTRUCTION COST ESTIMATE / QUOTATION</div><em>House Roofing Project</em></div>
+      <form id="estimate-form">
+        <div class="quotation-meta"><label>Estimate No.<input name="number" required placeholder="EST-019" /></label><label>Date<input name="date" type="date" required /></label><label>Project<select name="project" required></select></label></div>
+        <h3 class="quotation-section-title">PROJECT DIMENSIONS &amp; SCOPE</h3>
+        <div class="quotation-scope"><label>Item<input name="scopeItem" value="House" /></label><label>Description<input name="scopeDescription" value="Residential Building" /></label><label>Dimensions<input name="dimensions" placeholder="e.g. 3 Bedrooms; 40 ft x 32 ft" /></label></div>
+        <h3 class="quotation-section-title">A. ROOFING MATERIALS</h3>
+        <div class="quotation-items"><div class="quotation-item-head"><span>No.</span><span>Description</span><span>Qty.</span><span>Unit Price (USD)</span><span>Amount (USD)</span></div><div id="estimate-items"></div><button class="quotation-add-row" type="button" id="add-estimate-item">＋ Add material</button><div class="quotation-total"><span>SECTION TOTAL</span><strong id="estimate-section-total">$0.00</strong></div></div>
+        <div class="quotation-summary"><h3 class="quotation-section-title">COST SUMMARY</h3><label>Roofing Materials<input name="materialsTotal" readonly value="$0.00" /></label><label>Transportation<input name="transportation" type="number" min="0" step="0.01" value="0" /></label><label>Materials Subtotal<input name="subtotal" readonly value="$0.00" /></label><label>Workmanship<input name="workmanship" type="number" min="0" step="0.01" value="0" /></label><label class="quotation-grand-total">GRAND TOTAL<input name="amount" readonly value="$0.00" /></label></div>
+        <label class="quotation-notes">Notes<textarea name="notes" rows="3" placeholder="Add terms, assumptions, or notes for the client..."></textarea></label>
+        <div class="quotation-approval"><label>Prepared By<input name="preparedBy" placeholder="Name" /></label><label>Approved By / Client<input name="approvedBy" placeholder="Name" /></label><label>Status<select name="status"><option>Pending approval</option><option>Approved</option><option>Draft</option></select></label>
+        </div>
+        <div class="form-actions"><button type="button" class="button button-ghost" id="estimate-form-cancel">Cancel</button><button class="button button-primary" type="submit">Create estimate <span>→</span></button></div>
+      </form>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="payment-modal-backdrop" hidden>
+    <section class="modal payment-modal" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
+      <button class="modal-close" id="payment-modal-close" aria-label="Close">×</button>
+      <div class="modal-eyebrow">PAYMENT RECORD</div>
+      <h2 id="payment-modal-title">Record a payment</h2>
+      <p class="modal-copy">Capture the payment against the correct project and issue a digital receipt.</p>
+      <form id="payment-form">
+        <div class="form-grid">
+          <label>Client<input name="client" readonly placeholder="Selected from project" /></label>
+          <label>Client email<input name="clientEmail" type="email" readonly placeholder="No email on file" /></label>
+          <label>WhatsApp number<input name="whatsapp" type="tel" readonly placeholder="No number on file" /></label>
+          <label>Project<select name="project" required></select></label>
+          <label>Payment date and time<input name="paymentDate" type="datetime-local" required /></label>
+          <label>Amount<input name="amount" type="number" min="0.01" step="0.01" required placeholder="4500.00" /></label>
+          <label>Payment method<select name="paymentMethod" required><option>Cash</option><option>Bank transfer</option><option>Mobile money</option><option>Card</option><option>Cheque</option></select></label>
+          <label>Balance before payment<input name="balanceBefore" readonly /></label>
+          <label>Balance after payment<input name="balanceAfter" readonly /></label>
+          <label class="form-wide">Notes<textarea name="notes" rows="3" placeholder="Optional payment reference or note..."></textarea></label>
+        </div>
+        <div class="form-actions"><button type="button" class="button button-ghost" id="payment-form-cancel">Cancel</button><button class="button button-primary" type="submit">Record payment <span>→</span></button></div>
+      </form>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="receipt-modal-backdrop" hidden>
+    <section class="modal receipt-modal" role="dialog" aria-modal="true" aria-labelledby="receipt-modal-title">
+      <button class="modal-close" id="receipt-modal-close" aria-label="Close">×</button>
+      <div id="receipt-content"></div>
+      <div class="form-actions receipt-actions"><button type="button" class="button button-ghost" id="receipt-close">Done</button><button type="button" class="button button-ghost" id="receipt-email">Email receipt</button><button type="button" class="button button-ghost" id="receipt-whatsapp">WhatsApp receipt</button><button type="button" class="button button-primary" id="receipt-print">Print receipt <span>↗</span></button></div>
+    </section>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
