@@ -104,6 +104,7 @@ public class Worker
     public decimal Rate { get; set; }
     public string RatePeriod { get; set; } = "Daily";
     public ICollection<ProjectWorker> Projects { get; set; } = new List<ProjectWorker>();
+    public ICollection<WorkerPayment> Payments { get; set; } = new List<WorkerPayment>();
 }
 
 public class ProjectWorker
@@ -113,7 +114,22 @@ public class ProjectWorker
     public int WorkerId { get; set; }
     public Worker Worker { get; set; } = null!;
     public decimal AmountPaid { get; set; }
+    public string? Position { get; set; }
     public string? AttendanceNotes { get; set; }
+}
+
+public class WorkerPayment
+{
+    public int Id { get; set; }
+    public int WorkerId { get; set; }
+    public Worker Worker { get; set; } = null!;
+    public int ProjectId { get; set; }
+    public Project Project { get; set; } = null!;
+    public DateTime PaymentDate { get; set; }
+    public decimal Amount { get; set; }
+    public string? PaymentMethod { get; set; }
+    public string ReceiptNumber { get; set; } = "";
+    public string? Notes { get; set; }
 }
 
 public class ProjectDocument

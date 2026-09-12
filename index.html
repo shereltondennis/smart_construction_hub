@@ -11,6 +11,21 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="login-screen" id="login-screen">
+    <section class="login-panel">
+      <img class="login-logo" src="logo.png" alt="Smart Construction Hub" />
+      <div class="modal-eyebrow">SECURE WORKSPACE</div>
+      <h1>Sign in to SCH</h1>
+      <p>Use your administrator or office clerk account to continue.</p>
+      <form id="login-form">
+        <label>Username<input name="username" type="email" required placeholder="name@smartconstructionhub.local" /></label>
+        <label>Password<input name="password" type="password" required placeholder="Enter password" /></label>
+        <div class="login-error" id="login-error" hidden>Invalid username or password.</div>
+        <button class="button button-primary" type="submit">Sign in <span>→</span></button>
+      </form>
+      <small>Administrator and Office Clerk access are detected automatically.</small>
+    </section>
+  </div>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
@@ -22,25 +37,25 @@
       </div>
       <div class="workspace-label">WORKSPACE <span class="status-dot"></span></div>
       <nav class="nav-list" aria-label="Primary navigation">
-        <button class="nav-item active" data-view="overview"><span class="nav-icon">▦</span>Overview</button>
+        <button class="nav-item active" data-view="overview"><span class="nav-icon">▦</span>SCH Dashboard</button>
         <button class="nav-item" data-view="projects"><span class="nav-icon">▱</span>Projects <b>12</b></button>
         <button class="nav-item" data-view="clients"><span class="nav-icon">◉</span>Clients</button>
         <button class="nav-item" data-view="estimates"><span class="nav-icon">≡</span>Estimates <b class="alert-count">5</b></button>
-        <button class="nav-item" data-view="inventory"><span class="nav-icon">▤</span>Materials</button>
+        <button class="nav-item" data-view="workers"><span class="nav-icon">◉</span>Workers</button>
         <button class="nav-item" data-view="payments"><span class="nav-icon">↗</span>Payments</button>
         <button class="nav-item" data-view="documents"><span class="nav-icon">□</span>Documents</button>
       </nav>
       <div class="sidebar-bottom">
         <div class="sync-card"><div class="sync-icon">✓</div><div><strong>All data synced</strong><span>Last synced 2 min ago</span></div></div>
         <button class="nav-item"><span class="nav-icon">⚙</span>Settings</button>
-        <div class="profile"><div class="avatar avatar-dark">AM</div><div><strong>Alex Morgan</strong><span>Administrator</span></div><span class="more">•••</span></div>
+        <div class="profile"><div class="avatar avatar-dark" id="profile-avatar">AM</div><div><strong id="profile-name">Alex Morgan</strong><span id="profile-role">Administrator</span></div><button class="more" id="logout-button" type="button" aria-label="Sign out">↪</button></div>
       </div>
     </aside>
 
     <main class="main-content">
       <header class="topbar">
         <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation">☰</button>
-        <div class="breadcrumb"><span>Workspace</span><i>/</i><strong id="breadcrumb-title">Overview</strong></div>
+        <div class="breadcrumb"><span>Workspace</span><i>/</i><strong id="breadcrumb-title">SCH Dashboard</strong></div>
         <div class="top-actions">
           <button class="icon-button" aria-label="Search" id="focus-search">⌕</button>
           <button class="icon-button notification" aria-label="Notifications">♢<span></span></button>
@@ -63,8 +78,12 @@
         <div class="form-grid">
           <label>Project name<input name="name" required placeholder="e.g. Riverside 3-Bedroom Home" /></label>
           <label>Client<select name="client"><option>John Doe</option><option>Amara Mensah</option><option>David Kimani</option></select></label>
-          <label>Type of work<select name="type"><option>New construction</option><option>Renovation</option><option>Roofing</option><option>Interior finishing</option></select></label>
+          <label>Type of work<select name="typeChoice" onchange="toggleProjectWorkType(this.value)"><option>New construction</option><option>Renovation</option><option>Roofing</option><option>Interior finishing</option><option>Electrical work</option><option>Plumbing</option><option>Painting</option><option>Landscaping</option><option value="Other">Other</option></select></label>
+          <label id="custom-work-type-field" hidden>Custom type of work<input name="type" placeholder="e.g. Solar installation" /></label>
           <label>Contract amount<input name="amount" required type="number" min="0" placeholder="25000" /></label>
+          <label>Project location<input name="location" required placeholder="e.g. Paynesville, Monrovia" /></label>
+          <label>Start date<input name="startDate" required type="date" /></label>
+          <label>Expected end date<input name="endDate" required type="date" /></label>
         </div>
         <div class="form-actions"><button type="button" class="button button-ghost" id="form-cancel">Cancel</button><button class="button button-primary" type="submit">Create project <span>→</span></button></div>
       </form>
@@ -143,6 +162,276 @@
       <div class="form-actions receipt-actions"><button type="button" class="button button-ghost" id="receipt-close">Done</button><button type="button" class="button button-ghost" id="receipt-email">Email receipt</button><button type="button" class="button button-ghost" id="receipt-whatsapp">WhatsApp receipt</button><button type="button" class="button button-primary" id="receipt-print">Print receipt <span>↗</span></button></div>
     </section>
   </div>
+  <div class="modal-backdrop" id="worker-modal-backdrop" hidden>
+    <section class="modal worker-modal" role="dialog" aria-modal="true" aria-labelledby="worker-modal-title">
+      <button class="modal-close" id="worker-modal-close" aria-label="Close">×</button>
+      <div class="modal-eyebrow">WORKER RECORD</div>
+      <h2 id="worker-modal-title">Add worker</h2>
+      <p class="modal-copy">Record the worker's contact information, skill, amount, and payment condition.</p>
+      <form id="worker-form">
+        <div class="form-grid">
+          <label>Worker number<input name="workerNumber" required placeholder="e.g. WRK-001" /></label>
+          <label>Full name<input name="fullName" required placeholder="e.g. James Johnson" /></label>
+          <label>Phone / WhatsApp<input name="phone" type="tel" placeholder="+231 888 000 000" /></label>
+          <label>Skill<input name="skill" required placeholder="e.g. Mason, electrician, plumber" /></label>
+          <label>Amount<input name="workerAmount" required type="number" min="0" step="0.01" placeholder="75.00" /></label>
+          <label>Payment condition<select name="paymentCondition"><option>Daily</option><option>Hourly</option><option>Weekly</option><option>Monthly</option><option>Per project</option><option>Upon completion</option></select></label>
+        </div>
+        <div class="form-actions"><button type="button" class="button button-ghost" id="worker-form-cancel">Cancel</button><button class="button button-primary" type="submit">Save worker <span>→</span></button></div>
+      </form>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="assignment-modal-backdrop" hidden>
+    <section class="modal assignment-modal" role="dialog" aria-modal="true" aria-labelledby="assignment-modal-title">
+      <button class="modal-close" id="assignment-modal-close" aria-label="Close">×</button>
+      <div class="modal-eyebrow">PROJECT ASSIGNMENT</div>
+      <h2 id="assignment-modal-title">Assign worker to project</h2>
+      <p class="modal-copy">Connect this worker to a project and record assignment details.</p>
+      <form id="assignment-form">
+        <div class="form-grid">
+          <label>Project<select name="project" required></select></label>
+          <label>Worker position<input name="position" required placeholder="e.g. Site supervisor, Mason, Electrician" /></label>
+          <label>Amount paid<input name="amountPaid" type="number" min="0" step="0.01" value="0" /></label>
+          <label class="form-wide">Attendance notes<textarea name="attendanceNotes" rows="3" placeholder="Days, responsibilities, or attendance notes..."></textarea></label>
+        </div>
+        <div class="form-actions"><button type="button" class="button button-ghost" id="assignment-form-cancel">Cancel</button><button class="button button-primary" type="submit">Assign worker <span>→</span></button></div>
+      </form>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="worker-payment-modal-backdrop" hidden>
+    <section class="modal worker-modal" role="dialog" aria-modal="true" aria-labelledby="worker-payment-modal-title">
+      <button class="modal-close" id="worker-payment-modal-close" aria-label="Close">×</button>
+      <div class="modal-eyebrow">WORKER PAYMENT</div>
+      <h2 id="worker-payment-modal-title">Record worker payment</h2>
+      <p class="modal-copy">Record the amount paid, project, payment method, and exact payment time.</p>
+      <form id="worker-payment-form">
+        <div class="form-grid">
+          <label>Project<select name="project" required></select></label>
+          <label>Payment date and time<input name="paymentDate" type="datetime-local" required /></label>
+          <label>Amount<input name="amount" type="number" min="0.01" step="0.01" required placeholder="500.00" /></label>
+          <label>Payment method<select name="paymentMethod" required><option>Cash</option><option>Bank transfer</option><option>Mobile money</option><option>Card</option><option>Cheque</option></select></label>
+          <label class="form-wide">Notes<textarea name="notes" rows="3" placeholder="Optional payment note..."></textarea></label>
+        </div>
+        <div class="form-actions"><button type="button" class="button button-ghost" id="worker-payment-form-cancel">Cancel</button><button class="button button-primary" type="submit">Save payment <span>→</span></button></div>
+      </form>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="worker-receipt-modal-backdrop" hidden>
+    <section class="modal receipt-modal" role="dialog" aria-modal="true" aria-labelledby="worker-receipt-title">
+      <button class="modal-close" id="worker-receipt-modal-close" aria-label="Close">×</button>
+      <div id="worker-receipt-content"></div>
+      <div class="form-actions receipt-actions"><button type="button" class="button button-ghost" id="worker-receipt-close">Done</button><button type="button" class="button button-primary" id="worker-receipt-print">Print receipt <span>↗</span></button></div>
+    </section>
+  </div>
   <script src="app.js"></script>
+  <script>
+    const loginScreen = document.getElementById('login-screen');
+    const appShell = document.querySelector('.app-shell');
+    const loginForm = document.getElementById('login-form');
+    function showAuthenticatedUser(user) {
+      document.getElementById('profile-name').textContent = user.displayName;
+      document.getElementById('profile-role').textContent = user.role;
+      document.getElementById('profile-avatar').textContent = user.displayName.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+      loginScreen.hidden = true;
+      appShell.classList.add('authenticated');
+    }
+    async function checkSession() {
+      try { const response = await fetch('http://localhost:5050/api/auth/me'); if (!response.ok) throw new Error(); showAuthenticatedUser(await response.json()); }
+      catch { loginScreen.hidden = false; appShell.classList.remove('authenticated'); }
+    }
+    loginForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      const error = document.getElementById('login-error');
+      const data = new FormData(loginForm);
+      const response = await fetch('http://localhost:5050/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: data.get('username'), password: data.get('password') }) });
+      if (!response.ok) { error.hidden = false; return; }
+      error.hidden = true;
+      showAuthenticatedUser(await response.json());
+      setView('overview');
+      hydrateFromApi();
+    });
+    document.getElementById('logout-button').addEventListener('click', async () => { await fetch('http://localhost:5050/api/auth/logout', { method: 'POST' }); appShell.classList.remove('authenticated'); loginScreen.hidden = false; loginForm.reset(); });
+    checkSession();
+  </script>
+  <script>
+    document.getElementById('estimate-form').addEventListener('submit', event => {
+      const form = event.target;
+      const estimate = estimates[0];
+      if (!estimate) return;
+      estimate.scope = {
+        item: form.elements.scopeItem.value,
+        description: form.elements.scopeDescription.value,
+        dimensions: form.elements.dimensions.value
+      };
+      estimate.items = [...document.querySelectorAll('#estimate-items .quotation-item')].map(row => ({
+        description: row.querySelector('[name="itemDescription"]').value,
+        quantity: row.querySelector('[name="itemQuantity"]').value,
+        unitPrice: row.querySelector('[name="itemUnitPrice"]').value,
+        amount: row.querySelector('[name="itemAmount"]').value
+      }));
+      estimate.materialsTotal = form.elements.materialsTotal.value;
+      estimate.transportation = form.elements.transportation.value;
+      estimate.subtotal = form.elements.subtotal.value;
+      estimate.workmanship = form.elements.workmanship.value;
+      estimate.notes = form.elements.notes.value;
+      estimate.preparedBy = form.elements.preparedBy.value;
+      estimate.approvedBy = form.elements.approvedBy.value;
+      setTimeout(() => document.querySelectorAll('#app-content .full-table tbody tr').forEach(row => {
+        row.addEventListener('click', () => openEstimateDetail(row.querySelector('.project-name')?.textContent));
+      }), 0);
+    });
+    function openEstimateDetail(number) {
+      const estimate = estimates.find(item => item.number === number);
+      if (!estimate) return;
+      const project = projects.find(item => item.name === estimate.project);
+      const items = estimate.items?.length ? estimate.items.map((item, index) => { const unitPrice = Number(item.unitPrice) || 0; const lineTotal = (Number(item.quantity) || 0) * unitPrice; return `<tr><td>${index + 1}</td><td>${item.description || 'Unnamed item'}</td><td>${item.quantity || '0'}</td><td>${money(unitPrice)}</td><td>${money(lineTotal)}</td></tr>`; }).join('') : '<tr><td colspan="5">No line items recorded.</td></tr>';
+      document.getElementById('app-content').innerHTML = `<div class="view-title"><div><div class="eyebrow">ESTIMATE DETAILS</div><h1>${estimate.number}</h1><p>${estimate.project} · ${estimate.client}</p></div><button class="button button-ghost" id="back-to-estimates">← Back to estimates</button></div><div class="dashboard-grid"><div class="metric"><div class="metric-label">Estimate total</div><strong>${estimate.amount}</strong><div class="metric-foot">${estimate.status}</div></div><div class="metric metric-orange"><div class="metric-label">Project contract</div><strong>${project ? money(project.amount) : 'Not linked'}</strong><div class="metric-foot">${project?.location || 'Location not set'}</div></div><div class="metric"><div class="metric-label">Estimate date</div><strong>${estimate.date}</strong><div class="metric-foot">Prepared estimate</div></div><div class="metric metric-yellow"><div class="metric-label">Client</div><strong>${estimate.client}</strong><div class="metric-foot">${project?.name || 'Project not linked'}</div></div></div><div class="estimate-detail-grid"><section class="panel"><div class="panel-header"><div><h2>Scope and materials</h2><p>${estimate.scope?.item || 'Scope'} · ${estimate.scope?.description || 'No description'}</p></div><span class="status ${estimate.status === 'Approved' ? 'status-progress' : 'status-review'}">${estimate.status}</span></div><p class="estimate-dimensions">${estimate.scope?.dimensions || 'No dimensions supplied.'}</p><table class="project-table full-table"><thead><tr><th>No.</th><th>Description</th><th>Qty.</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${items}</tbody></table></section><section class="panel estimate-summary-panel"><h2>Cost summary</h2><div><span>Materials</span><strong>${estimate.materialsTotal || estimate.amount}</strong></div><div><span>Transportation</span><strong>${money(Number(estimate.transportation) || 0)}</strong></div><div><span>Subtotal</span><strong>${estimate.subtotal || estimate.amount}</strong></div><div><span>Workmanship</span><strong>${money(Number(estimate.workmanship) || 0)}</strong></div><div class="estimate-grand-total"><span>Grand total</span><strong>${estimate.amount}</strong></div><h3>Approval</h3><p>Prepared by: ${estimate.preparedBy || 'Not specified'}</p><p>Approved by / client: ${estimate.approvedBy || 'Not specified'}</p><h3>Notes</h3><p>${estimate.notes || 'No notes supplied.'}</p></section></div>`;
+      document.getElementById('back-to-estimates').addEventListener('click', () => setView('estimates'));
+    }
+    document.addEventListener('click', event => {
+      const row = event.target.closest('#app-content .full-table tbody tr');
+      if (row && row.querySelector('.project-name') && activeView === 'estimates') openEstimateDetail(row.querySelector('.project-name').textContent);
+    });
+  </script>
+  <script>
+    document.addEventListener('click', event => {
+      const projectRow = event.target.closest('tbody tr[data-project]');
+      const projectButton = event.target.closest('[data-project-id]');
+      const projectId = projectRow?.dataset.project || projectButton?.dataset.projectId;
+      if (projectId) setTimeout(() => appendProjectWorkers(projectId), 0);
+    });
+    function appendProjectWorkers(projectId) {
+      const project = projects.find(item => item.id === projectId);
+      if (!project || !document.querySelector('.view-title .eyebrow')?.textContent.includes(project.id)) return;
+      const assignments = project.workerAssignments || [];
+      const panel = document.createElement('section');
+      panel.className = 'panel project-workers-panel';
+      panel.innerHTML = `<div class="panel-header"><div><h2>Workers on this project</h2><p>Everyone assigned to this site and their role.</p></div><strong>${assignments.length}</strong></div>${assignments.length ? `<div class="project-worker-list">${assignments.map(assignment => { const worker = assignment.Worker || assignment.worker || {}; const phone = worker.Phone || worker.phone || ''; return `<div class="project-worker-card"><div class="avatar avatar-dark">${(worker.FullName || worker.fullName || 'W').split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><div><strong>${worker.FullName || worker.fullName || 'Worker'}</strong><span>${assignment.Position || assignment.position || 'Position not recorded'} · ${worker.Skill || worker.skill || 'Skill not specified'}</span><small>${phone || 'No phone recorded'} · ${money(Number(assignment.AmountPaid ?? assignment.amountPaid) || 0)} paid</small></div>${phone ? `<a class="button button-ghost" href="tel:${phone.replace(/[^+\d]/g, '')}">☎ Contact</a>` : ''}</div>`; }).join('')}</div>` : '<div class="empty-state">No workers assigned to this project yet.</div>'}`;
+      document.querySelector('.main-content .content-wrap')?.appendChild(panel);
+    }
+    document.getElementById('project-form').addEventListener('submit', event => {
+      const data = new FormData(event.target);
+      const project = projects[0];
+      if (!project) return;
+      project.type = data.get('typeChoice') === 'Other' ? data.get('type').trim() : data.get('typeChoice');
+      project.location = data.get('location').trim();
+      project.startDate = data.get('startDate');
+      project.expectedCompletionDate = data.get('endDate');
+      project.status = 'Pending payment';
+      setView('projects');
+    });
+  </script>
+  <script>
+    document.addEventListener('click', event => {
+      const row = event.target.closest('#worker-list tr');
+      if (row && row.querySelector('.project-name') && activeView === 'workers') {
+        openWorkerDetail(row.querySelector('.project-name').textContent);
+        setTimeout(() => {
+          const workerNumber = row.querySelector('.project-name').textContent;
+          const actions = document.querySelector('.worker-contact-actions');
+          if (actions && !document.getElementById('assign-worker-button')) {
+            const button = document.createElement('button');
+            button.id = 'assign-worker-button';
+            button.className = 'button button-ghost';
+            button.type = 'button';
+            button.textContent = 'Assign to project';
+            button.onclick = () => openAssignmentModal(workerNumber);
+            actions.appendChild(button);
+            const paymentButton = document.createElement('button');
+            paymentButton.className = 'button button-ghost';
+            paymentButton.type = 'button';
+            paymentButton.textContent = 'Record payment';
+            paymentButton.onclick = () => openWorkerPaymentModal(workerNumber);
+            actions.appendChild(paymentButton);
+          }
+        }, 0);
+      }
+    });
+    function openWorkerDetail(workerNumber) {
+      const worker = workers.find(item => item.workerNumber === workerNumber);
+      if (!worker) return;
+      const phone = worker.phone || '';
+      const assignedProjects = (worker.projects || []).map(item => ({ name: item.project?.name || item.project?.projectNumber || item.projectName, position: item.position || 'Position not recorded' })).filter(item => item.name);
+      document.getElementById('app-content').innerHTML = `<div class="view-title"><div><div class="eyebrow">WORKER PROFILE</div><h1>${worker.fullName}</h1><p>${worker.workerNumber} · ${worker.skill || 'Skill not specified'}</p></div><button class="button button-ghost" id="back-to-workers">← Back to workers</button></div><div class="worker-detail-grid"><section class="panel worker-contact-panel"><div class="avatar avatar-dark">${worker.fullName.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><h2>${worker.fullName}</h2><p>${worker.skill || 'Skill not specified'}</p><p>${phone || 'No phone number recorded'}</p><p>${money(Number(worker.rate) || 0)} · ${worker.ratePeriod || 'Daily'}</p><div class="worker-contact-actions">${phone ? `<a class="button button-primary" href="tel:${phone.replace(/[^+\d]/g, '')}">☎ Call worker</a><a class="button button-ghost" target="_blank" rel="noopener" href="https://wa.me/${phone.replace(/[^\d]/g, '')}">WhatsApp</a>` : '<span class="project-client">Add a phone number to contact this worker.</span>'}</div></section><section class="panel"><div class="panel-header"><div><h2>Worker information</h2><p>Contact and pay details for administration.</p></div><strong>${worker.workerNumber}</strong></div><div class="worker-info-list"><div><span>Full name</span><strong>${worker.fullName}</strong></div><div><span>Phone / WhatsApp</span><strong>${phone || 'Not recorded'}</strong></div><div><span>Skill</span><strong>${worker.skill || 'Not specified'}</strong></div><div><span>Rate</span><strong>${money(Number(worker.rate) || 0)} per ${worker.ratePeriod || 'day'}</strong></div></div><h3 class="worker-projects-heading">Assigned projects</h3><div class="client-project-list">${assignedProjects.length ? assignedProjects.map(project => `<div class="client-project-row"><strong>${project}</strong></div>`).join('') : '<div class="empty-state">No projects assigned yet.</div>'}</div></section></div>`;
+      document.querySelectorAll('.worker-projects-heading + .client-project-list .client-project-row').forEach((row, index) => { const assignment = assignedProjects[index]; row.innerHTML = `<span><strong>${assignment.name}</strong><small>${assignment.position}</small></span>`; });
+      const payments = workerPayments.filter(payment => payment.workerId === worker.id || payment.WorkerId === worker.id);
+      const paymentPanel = document.createElement('section');
+      paymentPanel.className = 'panel worker-payments-panel';
+      paymentPanel.innerHTML = `<div class="panel-header"><div><h2>Worker payment history</h2><p>Every payment recorded for this worker.</p></div><strong>${payments.length}</strong></div>${payments.length ? `<div class="worker-payment-list">${payments.map(payment => `<div class="worker-payment-row"><span><strong>${payment.receiptNumber}</strong><small>${new Date(payment.paymentDate).toLocaleString()} · ${payment.project?.name || 'Project'}</small></span><strong>${money(Number(payment.amount))}</strong><button class="text-button" type="button" data-worker-receipt="${payment.id}">View receipt</button></div>`).join('')}</div>` : '<div class="empty-state">No worker payments recorded yet.</div>'}`;
+      document.querySelector('.main-content .content-wrap')?.appendChild(paymentPanel);
+      paymentPanel.querySelectorAll('[data-worker-receipt]').forEach(button => button.onclick = () => showWorkerReceipt(payments.find(payment => String(payment.id) === button.dataset.workerReceipt)));
+      document.getElementById('back-to-workers').addEventListener('click', () => setView('workers'));
+    }
+  </script>
+  <script>
+    function openAssignmentModal(workerNumber) {
+      const worker = workers.find(item => item.workerNumber === workerNumber);
+      const form = document.getElementById('assignment-form');
+      if (!worker || !form) return;
+      form.reset();
+      form.elements.project.innerHTML = projects.map(project => `<option value="${project.id}">${project.name} · ${project.client}</option>`).join('');
+      form.onsubmit = event => saveAssignment(event, worker);
+      document.getElementById('assignment-modal-backdrop').hidden = false;
+      form.elements.project.focus();
+    }
+    function closeAssignmentModal() { document.getElementById('assignment-modal-backdrop').hidden = true; }
+    async function saveAssignment(event, worker) {
+      event.preventDefault();
+      const data = new FormData(event.target);
+      const project = projects.find(item => item.id === data.get('project'));
+      const assignment = { projectId: project.apiId, workerId: worker.id, position: data.get('position').trim(), amountPaid: Number(data.get('amountPaid')) || 0, attendanceNotes: data.get('attendanceNotes').trim() };
+      try {
+        if (!assignment.projectId || !assignment.workerId) throw new Error('local assignment');
+        const response = await fetch(`${API_BASE}/project-workers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(assignment) });
+        if (!response.ok) throw new Error('assignment failed');
+      } catch (error) {
+        worker.projects = worker.projects || [];
+        worker.projects.push({ project: { name: project.name }, position: assignment.position, amountPaid: assignment.amountPaid, attendanceNotes: assignment.attendanceNotes });
+        project.workerAssignments = project.workerAssignments || [];
+        project.workerAssignments.push({ Position: assignment.position, AmountPaid: assignment.amountPaid, AttendanceNotes: assignment.attendanceNotes, Worker: worker });
+      }
+      closeAssignmentModal();
+      openWorkerDetail(worker.workerNumber);
+    }
+    document.getElementById('assignment-modal-close').onclick = closeAssignmentModal;
+    document.getElementById('assignment-form-cancel').onclick = closeAssignmentModal;
+    document.getElementById('assignment-modal-backdrop').onclick = event => { if (event.target.id === 'assignment-modal-backdrop') closeAssignmentModal(); };
+  </script>
+  <script>
+    function openWorkerPaymentModal(workerNumber) {
+      const worker = workers.find(item => item.workerNumber === workerNumber);
+      const form = document.getElementById('worker-payment-form');
+      if (!worker) return;
+      form.reset();
+      form.elements.project.innerHTML = projects.map(project => `<option value="${project.id}">${project.name} · ${project.client}</option>`).join('');
+      const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      form.elements.paymentDate.value = now.toISOString().slice(0, 16);
+      form.onsubmit = event => saveWorkerPayment(event, worker);
+      document.getElementById('worker-payment-modal-backdrop').hidden = false;
+      form.elements.amount.focus();
+    }
+    function closeWorkerPaymentModal() { document.getElementById('worker-payment-modal-backdrop').hidden = true; }
+    async function saveWorkerPayment(event, worker) {
+      event.preventDefault();
+      const data = new FormData(event.target);
+      const project = projects.find(item => item.id === data.get('project'));
+      const payment = { workerId: worker.id, projectId: project.apiId, workerName: worker.fullName, projectName: project.name, paymentDate: new Date(data.get('paymentDate')).toISOString(), amount: Number(data.get('amount')), paymentMethod: data.get('paymentMethod'), notes: data.get('notes').trim(), receiptNumber: `WRC-${Date.now().toString().slice(-8)}` };
+      try {
+        if (!payment.workerId || !payment.projectId) throw new Error('local payment');
+        const response = await fetch(`${API_BASE}/worker-payments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workerId: payment.workerId, projectId: payment.projectId, paymentDate: payment.paymentDate, amount: payment.amount, paymentMethod: payment.paymentMethod, notes: payment.notes }) });
+        if (!response.ok) throw new Error('payment failed');
+        const saved = await response.json(); payment.id = saved.id; payment.receiptNumber = saved.receiptNumber; payment.project = { name: project.name };
+      } catch (error) { payment.id = `local-${Date.now()}`; payment.project = { name: project.name }; }
+      workerPayments.unshift(payment); closeWorkerPaymentModal(); showWorkerReceipt(payment); openWorkerDetail(worker.workerNumber);
+    }
+    function showWorkerReceipt(payment) { document.getElementById('worker-receipt-content').innerHTML = `<div class="receipt-brand"><div class="modal-eyebrow">SMART CONSTRUCTION HUB</div><h2 id="worker-receipt-title">Worker payment receipt</h2><span>Official digital record</span></div><div class="receipt-meta"><div><span>Receipt number</span><strong>${payment.receiptNumber}</strong></div><div><span>Date and time</span><strong>${new Date(payment.paymentDate).toLocaleString()}</strong></div></div><div class="receipt-party"><div><span>Paid to</span><strong>${payment.worker?.fullName || payment.workerName}</strong></div><div><span>Project</span><strong>${payment.project?.name || payment.projectName}</strong></div><div><span>Payment method</span><strong>${payment.paymentMethod || 'Not specified'}</strong></div></div><div class="receipt-total"><span>Amount paid</span><strong>${money(Number(payment.amount))}</strong></div>${payment.notes ? `<p class="receipt-note">Note: ${payment.notes}</p>` : ''}<p class="receipt-thanks">Payment recorded successfully.</p>`; document.getElementById('worker-receipt-modal-backdrop').hidden = false; }
+    function closeWorkerReceipt() { document.getElementById('worker-receipt-modal-backdrop').hidden = true; }
+    document.getElementById('worker-payment-modal-close').onclick = closeWorkerPaymentModal;
+    document.getElementById('worker-payment-form-cancel').onclick = closeWorkerPaymentModal;
+    document.getElementById('worker-payment-modal-backdrop').onclick = event => { if (event.target.id === 'worker-payment-modal-backdrop') closeWorkerPaymentModal(); };
+    document.getElementById('worker-receipt-modal-close').onclick = closeWorkerReceipt;
+    document.getElementById('worker-receipt-close').onclick = closeWorkerReceipt;
+    document.getElementById('worker-receipt-print').onclick = () => window.print();
+  </script>
 </body>
 </html>

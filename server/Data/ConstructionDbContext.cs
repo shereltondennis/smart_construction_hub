@@ -14,6 +14,7 @@ public class ConstructionDbContext(DbContextOptions<ConstructionDbContext> optio
     public DbSet<Material> Materials => Set<Material>();
     public DbSet<Worker> Workers => Set<Worker>();
     public DbSet<ProjectWorker> ProjectWorkers => Set<ProjectWorker>();
+    public DbSet<WorkerPayment> WorkerPayments => Set<WorkerPayment>();
     public DbSet<ProjectDocument> Documents => Set<ProjectDocument>();
     public DbSet<ProjectPhoto> Photos => Set<ProjectPhoto>();
 
@@ -33,6 +34,8 @@ public class ConstructionDbContext(DbContextOptions<ConstructionDbContext> optio
         modelBuilder.Entity<Worker>().Property(x => x.Rate).HasPrecision(18, 2);
         modelBuilder.Entity<ProjectWorker>().Property(x => x.AmountPaid).HasPrecision(18, 2);
         modelBuilder.Entity<ProjectWorker>().HasKey(x => new { x.ProjectId, x.WorkerId });
+        modelBuilder.Entity<WorkerPayment>().Property(x => x.Amount).HasPrecision(18, 2);
+        modelBuilder.Entity<WorkerPayment>().HasIndex(x => x.ReceiptNumber).IsUnique();
         modelBuilder.Entity<Project>().HasOne(x => x.Client).WithMany(x => x.Projects).HasForeignKey(x => x.ClientId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<Estimate>().HasMany(x => x.Items).WithOne(x => x.Estimate).HasForeignKey(x => x.EstimateId).OnDelete(DeleteBehavior.Cascade);
     }

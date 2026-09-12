@@ -8,6 +8,8 @@ public static class DatabaseInitializer
     public static async Task InitializeAsync(ConstructionDbContext db)
     {
         await db.Database.EnsureCreatedAsync();
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('ProjectWorkers', 'Position') IS NULL ALTER TABLE ProjectWorkers ADD Position NVARCHAR(120) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF OBJECT_ID('WorkerPayments', 'U') IS NULL CREATE TABLE WorkerPayments (Id INT IDENTITY PRIMARY KEY, WorkerId INT NOT NULL, ProjectId INT NOT NULL, PaymentDate DATETIME2 NOT NULL, Amount DECIMAL(18,2) NOT NULL, PaymentMethod NVARCHAR(40), ReceiptNumber NVARCHAR(80) NOT NULL UNIQUE, Notes NVARCHAR(500), FOREIGN KEY (WorkerId) REFERENCES Workers(Id) ON DELETE CASCADE, FOREIGN KEY (ProjectId) REFERENCES Projects(Id) ON DELETE CASCADE);");
 
         if (await db.Clients.AnyAsync())
         {
