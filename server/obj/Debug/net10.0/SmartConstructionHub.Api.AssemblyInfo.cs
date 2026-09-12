@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartConstructionHub.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e3a5024764aad9e512bb29f277211cf14bdbc235")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c2ec680940874ff31936c44f00c9b6a32a5e783d")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartConstructionHub.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartConstructionHub.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -10,7 +10,19 @@ ASP.NET Core 10 Web API backed by SQL Server and Entity Framework Core.
 
 ## Configure and run
 
-1. Update `appsettings.json` if your SQL Server instance is not `localhost`.
+1. The project uses SQL Server authentication. The login name and server are in `appsettings.json`; its password is intentionally not stored there. Before starting the API, set it for your Windows account:
+
+```powershell
+[Environment]::SetEnvironmentVariable('SCH_SQL_PASSWORD', 'your-password-here', 'User')
+```
+
+Close and reopen PowerShell after running that command. For the current PowerShell session only, use:
+
+```powershell
+$env:SCH_SQL_PASSWORD = 'your-password-here'
+```
+
+Update `appsettings.json` if your SQL Server instance or login name differs.
 2. The API creates the configured database and seeds one connected sample project automatically on first start. You can also create it manually with `Database/schema.sql`.
 
 For a migration-based production workflow, use:

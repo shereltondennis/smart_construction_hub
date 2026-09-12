@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
@@ -7,9 +8,24 @@ using SmartConstructionHub.Api.Data;
 using SmartConstructionHub.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseWindowsService();
+
+var databaseConnection = builder.Configuration.GetConnectionString("ConstructionDatabase")
+    ?? throw new InvalidOperationException("The ConstructionDatabase connection string is missing.");
+var databasePassword = Environment.GetEnvironmentVariable("SCH_SQL_PASSWORD");
+if (string.IsNullOrWhiteSpace(databasePassword))
+{
+    throw new InvalidOperationException("Set the SCH_SQL_PASSWORD environment variable before starting the API.");
+}
+
+var connectionBuilder = new SqlConnectionStringBuilder(databaseConnection)
+{
+    IntegratedSecurity = false,
+    Password = databasePassword
+};
 
 builder.Services.AddDbContext<ConstructionDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("ConstructionDatabase")));
+    options.UseSqlServer(connectionBuilder.ConnectionString));
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
 {
     options.Cookie.Name = "sch-admin-session";
