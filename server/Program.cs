@@ -1,13 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication;
-using System.Security.Claims;
 using System.Text.Json.Serialization;
 using SmartConstructionHub.Api.Data;
 using SmartConstructionHub.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration
+    .SetBasePath(AppContext.BaseDirectory)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+    .AddEnvironmentVariables();
 builder.Host.UseWindowsService();
 
 var databaseConnection = builder.Configuration.GetConnectionString("ConstructionDatabase")
@@ -26,15 +27,6 @@ var connectionBuilder = new SqlConnectionStringBuilder(databaseConnection)
 
 builder.Services.AddDbContext<ConstructionDbContext>(options =>
     options.UseSqlServer(connectionBuilder.ConnectionString));
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
-{
-    options.Cookie.Name = "sch-admin-session";
-    options.Cookie.HttpOnly = true;
-    options.Cookie.SameSite = SameSiteMode.None;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    options.Events.OnRedirectToLogin = context => { context.Response.StatusCode = StatusCodes.Status401Unauthorized; return Task.CompletedTask; };
-});
-builder.Services.AddAuthorization();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
@@ -44,18 +36,6 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 app.UseCors("Frontend");
-app.UseAuthentication();
-app.UseAuthorization();
-app.Use(async (context, next) =>
-{
-    var isPublic = context.Request.Path == "/api/health" || context.Request.Path == "/api/auth/login";
-    if (context.Request.Path.StartsWithSegments("/api") && !isPublic && !(context.User.Identity?.IsAuthenticated ?? false))
-    {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        return;
-    }
-    await next();
-});
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -69,17 +49,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok", service = "Smart Construction Hub API" }));
-app.MapPost("/api/auth/login", async (LoginRequest request, HttpContext http, IConfiguration configuration) =>
-{
-    var users = configuration.GetSection("Authentication:Users").Get<List<LoginUser>>() ?? new();
-    var user = users.FirstOrDefault(item => item.Username.Equals(request.Username, StringComparison.OrdinalIgnoreCase) && item.Password == request.Password);
-    if (user is null) return Results.Unauthorized();
-    var claims = new[] { new Claim(ClaimTypes.Name, user.DisplayName), new Claim(ClaimTypes.Role, user.Role) };
-    await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)));
-    return Results.Ok(new { displayName = user.DisplayName, role = user.Role });
-});
-app.MapPost("/api/auth/logout", async (HttpContext http) => { await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme); return Results.Ok(); });
-app.MapGet("/api/auth/me", (HttpContext http) => Results.Ok(new { displayName = http.User.Identity?.Name, role = http.User.FindFirstValue(ClaimTypes.Role) }));
 
 app.MapGet("/api/dashboard", async (ConstructionDbContext db) =>
 {
@@ -133,13 +102,33 @@ app.MapPost("/api/payments", async (Payment payment, ConstructionDbContext db) =
     }
 
     payment.PaymentDate = payment.PaymentDate == default ? DateTime.UtcNow : payment.PaymentDate;
-    payment.ReceiptNumber = string.IsNullOrWhiteSpace(payment.ReceiptNumber)
-        ? $"RC-{DateTime.UtcNow:yyyyMMddHHmmss}"
-        : payment.ReceiptNumber;
+    payment.ReceiptNumber = null;
     project.Status = "In progress";
     db.Payments.Add(payment);
     await db.SaveChangesAsync();
+    payment.ReceiptNumber = $"SCH-{payment.Id:D6}";
+    await db.SaveChangesAsync();
     return Results.Created($"/api/payments/{payment.Id}", payment);
+});
+app.MapPut("/api/payments/{id:int}", async (int id, Payment input, ConstructionDbContext db) =>
+{
+    if (input.Amount <= 0)
+    {
+        return Results.BadRequest(new { message = "The payment amount must be greater than zero." });
+    }
+
+    var payment = await db.Payments.FindAsync(id);
+    if (payment is null)
+    {
+        return Results.NotFound();
+    }
+
+    payment.PaymentDate = input.PaymentDate == default ? payment.PaymentDate : input.PaymentDate;
+    payment.Amount = input.Amount;
+    payment.PaymentMethod = input.PaymentMethod;
+    payment.Notes = input.Notes;
+    await db.SaveChangesAsync();
+    return Results.Ok(payment);
 });
 app.MapGet("/api/materials", async (ConstructionDbContext db) => await db.Materials.AsNoTracking().ToListAsync());
 app.MapPost("/api/materials", async (Material material, ConstructionDbContext db) => { db.Materials.Add(material); await db.SaveChangesAsync(); return Results.Created($"/api/materials/{material.Id}", material); });
@@ -152,13 +141,15 @@ app.MapPost("/api/worker-payments", async (WorkerPayment payment, ConstructionDb
         return Results.BadRequest(new { message = "A worker, project, and payment amount greater than zero are required." });
     }
 
-    if (!await db.Workers.AnyAsync(worker => worker.Id == payment.WorkerId) || !await db.Projects.AnyAsync(project => project.Id == payment.ProjectId))
+    var worker = await db.Workers.FindAsync(payment.WorkerId);
+    if (worker is null || !await db.Projects.AnyAsync(project => project.Id == payment.ProjectId))
     {
         return Results.BadRequest(new { message = "The selected worker or project could not be found." });
     }
 
     payment.PaymentDate = payment.PaymentDate == default ? DateTime.UtcNow : payment.PaymentDate;
     payment.ReceiptNumber = string.IsNullOrWhiteSpace(payment.ReceiptNumber) ? $"WRC-{DateTime.UtcNow:yyyyMMddHHmmssfff}" : payment.ReceiptNumber;
+    worker.AmountOwed = Math.Max(0, worker.AmountOwed - payment.Amount);
     db.WorkerPayments.Add(payment);
     await db.SaveChangesAsync();
     return Results.Created($"/api/worker-payments/{payment.Id}", payment);
@@ -183,12 +174,3 @@ app.MapPost("/api/project-workers", async (ProjectWorker assignment, Constructio
 });
 
 app.Run();
-
-public record LoginRequest(string Username, string Password);
-public class LoginUser
-{
-    public string Username { get; set; } = "";
-    public string Password { get; set; } = "";
-    public string DisplayName { get; set; } = "";
-    public string Role { get; set; } = "";
-}

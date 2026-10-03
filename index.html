@@ -9,23 +9,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="receipt.css" />
+  <link rel="stylesheet" href="estimate.css" />
+  <link rel="stylesheet" href="worker.css" />
 </head>
 <body>
-  <div class="login-screen" id="login-screen">
-    <section class="login-panel">
-      <img class="login-logo" src="logo.png" alt="Smart Construction Hub" />
-      <div class="modal-eyebrow">SECURE WORKSPACE</div>
-      <h1>Sign in to SCH</h1>
-      <p>Use your administrator or office clerk account to continue.</p>
-      <form id="login-form">
-        <label>Username<input name="username" type="email" required placeholder="name@smartconstructionhub.local" /></label>
-        <label>Password<input name="password" type="password" required placeholder="Enter password" /></label>
-        <div class="login-error" id="login-error" hidden>Invalid username or password.</div>
-        <button class="button button-primary" type="submit">Sign in <span>→</span></button>
-      </form>
-      <small>Administrator and Office Clerk access are detected automatically.</small>
-    </section>
-  </div>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
@@ -48,7 +36,7 @@
       <div class="sidebar-bottom">
         <div class="sync-card"><div class="sync-icon">✓</div><div><strong>All data synced</strong><span>Last synced 2 min ago</span></div></div>
         <button class="nav-item"><span class="nav-icon">⚙</span>Settings</button>
-        <div class="profile"><div class="avatar avatar-dark" id="profile-avatar">AM</div><div><strong id="profile-name">Alex Morgan</strong><span id="profile-role">Administrator</span></div><button class="more" id="logout-button" type="button" aria-label="Sign out">↪</button></div>
+        <div class="profile"><div class="avatar avatar-dark" id="profile-avatar">AM</div><div><strong id="profile-name">Alex Morgan</strong><span id="profile-role">Administrator</span></div></div>
       </div>
     </aside>
 
@@ -116,19 +104,56 @@
   <div class="modal-backdrop" id="estimate-modal-backdrop" hidden>
     <section class="modal quotation-modal" role="dialog" aria-modal="true" aria-labelledby="estimate-modal-title">
       <button class="modal-close" id="estimate-modal-close" aria-label="Close">×</button>
-      <div class="quotation-header"><img src="logo.png" alt="Smart Construction Hub logo" /><div><strong>SMART CONSTRUCTION HUB</strong><span>BUILDING YOUR HOME UP TO STANDARD</span><small>Tissue Factory, Bernard Farm, Paynesville City, Monrovia Liberia</small><small>WhatsApp: +231 888 827 060 | Email: info.smartconstructionhub@gmail.com</small></div></div>
-      <div class="quotation-title"><div class="modal-eyebrow">CONSTRUCTION COST ESTIMATE / QUOTATION</div><em>House Roofing Project</em></div>
+      <div class="quotation-header"><img src="logo.png" alt="Smart Construction Hub logo" /><div><strong>SMART CONSTRUCTION HUB</strong><span>Building Your Home Up to Standard</span><small>Monrovia, Liberia</small><small>Phone: +231 888 827 060 | Email: info.smartconstructionhub@gmail.com</small></div></div>
+      <div class="quotation-title"><div class="modal-eyebrow">CONSTRUCTION ESTIMATE / QUOTATION</div><p>Prepared for your construction project</p></div>
       <form id="estimate-form">
-        <div class="quotation-meta"><label>Estimate No.<input name="number" required placeholder="EST-019" /></label><label>Date<input name="date" type="date" required /></label><label>Project<select name="project" required></select></label></div>
-        <h3 class="quotation-section-title">PROJECT DIMENSIONS &amp; SCOPE</h3>
-        <div class="quotation-scope"><label>Item<input name="scopeItem" value="House" /></label><label>Description<input name="scopeDescription" value="Residential Building" /></label><label>Dimensions<input name="dimensions" placeholder="e.g. 3 Bedrooms; 40 ft x 32 ft" /></label></div>
-        <h3 class="quotation-section-title">A. ROOFING MATERIALS</h3>
-        <div class="quotation-items"><div class="quotation-item-head"><span>No.</span><span>Description</span><span>Qty.</span><span>Unit Price (USD)</span><span>Amount (USD)</span></div><div id="estimate-items"></div><button class="quotation-add-row" type="button" id="add-estimate-item">＋ Add material</button><div class="quotation-total"><span>SECTION TOTAL</span><strong id="estimate-section-total">$0.00</strong></div></div>
-        <div class="quotation-summary"><h3 class="quotation-section-title">COST SUMMARY</h3><label>Roofing Materials<input name="materialsTotal" readonly value="$0.00" /></label><label>Transportation<input name="transportation" type="number" min="0" step="0.01" value="0" /></label><label>Materials Subtotal<input name="subtotal" readonly value="$0.00" /></label><label>Workmanship<input name="workmanship" type="number" min="0" step="0.01" value="0" /></label><label class="quotation-grand-total">GRAND TOTAL<input name="amount" readonly value="$0.00" /></label></div>
-        <label class="quotation-notes">Notes<textarea name="notes" rows="3" placeholder="Add terms, assumptions, or notes for the client..."></textarea></label>
-        <div class="quotation-approval"><label>Prepared By<input name="preparedBy" placeholder="Name" /></label><label>Approved By / Client<input name="approvedBy" placeholder="Name" /></label><label>Status<select name="status"><option>Pending approval</option><option>Approved</option><option>Draft</option></select></label>
+        <div class="estimate-document">
+          <div class="estimate-meta"><label>Estimate No.<input name="number" required /></label><label>Date<input name="date" type="date" required /></label><label>Valid Until<input name="validUntil" type="date" required /></label></div>
+          <section class="estimate-paper-section">
+            <h3>CLIENT INFORMATION</h3>
+            <div class="estimate-field-grid"><label>Client Name<input name="clientName" required placeholder="Enter client name" /></label><label>Phone<input name="clientPhone" placeholder="Enter phone number" /></label><label>Address<input name="clientAddress" placeholder="Enter client address" /></label><label>Project Location<input name="projectLocation" placeholder="Enter project location" /></label></div>
+          </section>
+          <section class="estimate-paper-section">
+            <h3>PROJECT INFORMATION</h3>
+            <div class="estimate-field-grid"><label>Project<input name="project" list="estimate-project-options" required placeholder="Enter project name" /></label><datalist id="estimate-project-options"></datalist><label>Estimated Start Date<input name="startDate" type="date" /></label><label class="estimate-field-wide">Scope of Work<textarea name="scopeOfWork" rows="2" required placeholder="Describe the work covered by this quotation"></textarea></label></div>
+          </section>
+          <section class="estimate-paper-section">
+            <h3>MATERIALS &amp; WORK ESTIMATE</h3>
+            <div class="estimate-table-wrap"><div class="estimate-item-head"><span>#</span><span>Description</span><span>Qty</span><span>Unit</span><span>Unit Price</span><span>Total</span><span></span></div><div id="estimate-items"></div></div>
+            <button class="quotation-add-row" type="button" id="add-estimate-item">＋ Add item</button>
+            <div class="estimate-totals">
+              <div><span>Materials Subtotal</span><output id="estimate-materials-total">US$ 0.00</output></div>
+              <div><span>Labor</span><output id="estimate-labor-total">US$ 0.00</output></div>
+              <label>Transportation<input name="transportation" type="number" min="0" step="0.01" value="0" /></label>
+              <label>Other<input name="other" type="number" min="0" step="0.01" value="0" /></label>
+              <label class="estimate-grand-total">GRAND TOTAL<input name="amount" readonly value="US$ 0.00" /></label>
+              <div class="estimate-words"><span>Amount in Words</span><output id="estimate-amount-words">Zero United States Dollars</output></div>
+            </div>
+          </section>
+          <section class="estimate-paper-section">
+            <h3>PAYMENT SCHEDULE</h3>
+            <div class="estimate-schedule"><div class="estimate-schedule-head"><span>Payment</span><span>Amount</span><span>Due</span></div>
+              <label><span>Initial Deposit</span><input name="depositAmount" type="number" min="0" step="0.01" placeholder="0.00" /><input name="depositDue" value="Before work begins" /></label>
+              <label><span>Second Payment</span><input name="secondAmount" type="number" min="0" step="0.01" placeholder="0.00" /><input name="secondDue" placeholder="Agreed milestone" /></label>
+              <label><span>Third Payment</span><input name="thirdAmount" type="number" min="0" step="0.01" placeholder="0.00" /><input name="thirdDue" placeholder="Agreed milestone" /></label>
+              <label><span>Final Payment</span><input name="finalAmount" type="number" min="0" step="0.01" placeholder="0.00" /><input name="finalDue" value="Upon completion" /></label>
+            </div>
+          </section>
+          <section class="estimate-paper-section estimate-terms"><h3>TERMS &amp; CONDITIONS</h3><ol>
+            <li>This estimate is based on the scope of work and quantities listed above.</li>
+            <li>Prices may change if material prices change before purchase.</li>
+            <li>Additional work requires a separate quotation or written approval.</li>
+            <li>The client is responsible for permits and approvals assigned to the client.</li>
+            <li>Completion timing depends on weather, material availability, site conditions, and approved changes.</li>
+            <li>Payments are due according to the agreed payment schedule.</li>
+            <li>A detailed contract should be signed before construction begins.</li>
+          </ol></section>
+          <section class="estimate-paper-section">
+            <h3>APPROVAL</h3>
+            <div class="estimate-approval-grid"><label>Prepared By<input name="preparedBy" /></label><label>Signature<input name="preparedSignature" /></label><label>Date<input name="preparedDate" type="date" /></label><label>Client Name<input name="approvedBy" placeholder="Enter client name" /></label><label>Client Signature<input name="clientSignature" /></label><label>Date<input name="clientApprovalDate" type="date" /></label></div>
+          </section>
         </div>
-        <div class="form-actions"><button type="button" class="button button-ghost" id="estimate-form-cancel">Cancel</button><button class="button button-primary" type="submit">Create estimate <span>→</span></button></div>
+        <div class="form-actions estimate-actions"><button type="button" class="button button-ghost" id="estimate-form-cancel">Cancel</button><button type="button" class="button button-ghost" id="estimate-print">Print Estimate</button><button class="button button-primary" type="submit">Create estimate <span>→</span></button></div>
       </form>
     </section>
   </div>
@@ -159,7 +184,13 @@
     <section class="modal receipt-modal" role="dialog" aria-modal="true" aria-labelledby="receipt-modal-title">
       <button class="modal-close" id="receipt-modal-close" aria-label="Close">×</button>
       <div id="receipt-content"></div>
-      <div class="form-actions receipt-actions"><button type="button" class="button button-ghost" id="receipt-close">Done</button><button type="button" class="button button-ghost" id="receipt-email">Email receipt</button><button type="button" class="button button-ghost" id="receipt-whatsapp">WhatsApp receipt</button><button type="button" class="button button-primary" id="receipt-print">Print receipt <span>↗</span></button></div>
+      <div class="receipt-actions" aria-label="Receipt actions">
+        <button type="button" id="receipt-print">🖨 Print Receipt</button>
+        <button type="button" id="receipt-download">📄 Download PDF</button>
+        <button type="button" id="receipt-send">📤 Send to Customer</button>
+        <button type="button" id="receipt-share">📱 Share</button>
+        <button type="button" id="receipt-edit">✏️ Edit</button>
+      </div>
     </section>
   </div>
   <div class="modal-backdrop" id="worker-modal-backdrop" hidden>
@@ -167,15 +198,30 @@
       <button class="modal-close" id="worker-modal-close" aria-label="Close">×</button>
       <div class="modal-eyebrow">WORKER RECORD</div>
       <h2 id="worker-modal-title">Add worker</h2>
-      <p class="modal-copy">Record the worker's contact information, skill, amount, and payment condition.</p>
+      <p class="modal-copy">Record personal details, employment terms, attendance, and pay information.</p>
       <form id="worker-form">
         <div class="form-grid">
-          <label>Worker number<input name="workerNumber" required placeholder="e.g. WRK-001" /></label>
+          <label>Worker ID<input name="workerNumber" required placeholder="e.g. WRK-001" /></label>
           <label>Full name<input name="fullName" required placeholder="e.g. James Johnson" /></label>
-          <label>Phone / WhatsApp<input name="phone" type="tel" placeholder="+231 888 000 000" /></label>
-          <label>Skill<input name="skill" required placeholder="e.g. Mason, electrician, plumber" /></label>
-          <label>Amount<input name="workerAmount" required type="number" min="0" step="0.01" placeholder="75.00" /></label>
-          <label>Payment condition<select name="paymentCondition"><option>Daily</option><option>Hourly</option><option>Weekly</option><option>Monthly</option><option>Per project</option><option>Upon completion</option></select></label>
+          <label>Phone number<input name="phone" type="tel" placeholder="+231 888 000 000" /></label>
+          <label>Address<input name="address" placeholder="Street, city, county" /></label>
+          <label>Job / skill<input name="skill" required placeholder="Carpenter, mason, plumber..." /></label>
+          <label>Employment type<select name="employmentType"><option>Full-time</option><option>Part-time</option><option>Contract</option><option>Temporary</option><option>Casual</option></select></label>
+          <label>Pay amount<input name="workerAmount" required type="number" min="0" step="0.01" placeholder="75.00" /></label>
+          <label>Pay frequency<select name="paymentCondition"><option>Daily</option><option>Weekly</option><option>Monthly</option><option>Hourly</option><option>Per project</option></select></label>
+          <label>Date hired<input name="dateHired" type="date" /></label>
+          <label>Emergency contact name<input name="emergencyContactName" placeholder="Contact full name" /></label>
+          <label>Emergency contact phone<input name="emergencyContactPhone" type="tel" placeholder="+231 888 000 000" /></label>
+          <label>ID / document type<input name="idDocumentType" placeholder="National ID, passport..." /></label>
+          <label>ID / document number<input name="idDocumentNumber" /></label>
+          <div class="worker-photo-field form-wide"><span class="worker-photo-label">Passport-size photo</span><div class="worker-photo-control"><div class="worker-photo-frame"><img id="worker-photo-preview" alt="Worker passport photo preview" hidden /><span id="worker-photo-placeholder">Photo preview</span></div><div class="worker-photo-inputs"><input id="worker-photo-input" type="file" accept="image/jpeg,image/png,image/webp" /><small>Choose a clear portrait photo. It will be fitted to the passport frame.</small><button type="button" class="text-button" id="worker-photo-clear" hidden>Remove photo</button></div></div></div>
+          <label>Project assigned<select name="projectId"><option value="">No project assigned yet</option></select></label>
+          <label>Worker position<input name="position" placeholder="Mason, site supervisor..." /></label>
+          <label>Attendance status<select name="attendanceStatus"><option>Not recorded</option><option>Present</option><option>Absent</option><option>On leave</option></select></label>
+          <label>Work hours<input name="workHours" type="number" min="0" step="0.25" value="0" /></label>
+          <label>Amount owed<input name="amountOwed" type="number" min="0" step="0.01" value="0" /></label>
+          <label>Worker status<select name="status"><option>Active</option><option>Inactive</option></select></label>
+          <label class="form-wide">Attendance notes<textarea name="attendanceNotes" rows="2" placeholder="Attendance and work notes..."></textarea></label>
         </div>
         <div class="form-actions"><button type="button" class="button button-ghost" id="worker-form-cancel">Cancel</button><button class="button button-primary" type="submit">Save worker <span>→</span></button></div>
       </form>
@@ -223,62 +269,78 @@
       <div class="form-actions receipt-actions"><button type="button" class="button button-ghost" id="worker-receipt-close">Done</button><button type="button" class="button button-primary" id="worker-receipt-print">Print receipt <span>↗</span></button></div>
     </section>
   </div>
-  <script src="app.js"></script>
+  <script src="app.js" defer></script>
+  <script src="receipt.js" defer></script>
   <script>
-    const loginScreen = document.getElementById('login-screen');
-    const appShell = document.querySelector('.app-shell');
-    const loginForm = document.getElementById('login-form');
-    function showAuthenticatedUser(user) {
-      document.getElementById('profile-name').textContent = user.displayName;
-      document.getElementById('profile-role').textContent = user.role;
-      document.getElementById('profile-avatar').textContent = user.displayName.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
-      loginScreen.hidden = true;
-      appShell.classList.add('authenticated');
-    }
-    async function checkSession() {
-      try { const response = await fetch('http://localhost:5050/api/auth/me'); if (!response.ok) throw new Error(); showAuthenticatedUser(await response.json()); }
-      catch { loginScreen.hidden = false; appShell.classList.remove('authenticated'); }
-    }
-    loginForm.addEventListener('submit', async event => {
-      event.preventDefault();
-      const error = document.getElementById('login-error');
-      const data = new FormData(loginForm);
-      const response = await fetch('http://localhost:5050/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: data.get('username'), password: data.get('password') }) });
-      if (!response.ok) { error.hidden = false; return; }
-      error.hidden = true;
-      showAuthenticatedUser(await response.json());
-      setView('overview');
-      hydrateFromApi();
+    document.addEventListener('DOMContentLoaded', () => {
+      const estimatePrint = document.getElementById('estimate-print');
+      if (estimatePrint) estimatePrint.addEventListener('click', () => window.print());
+      if (typeof setView === 'function') {
+        setView('overview');
+      }
+      if (typeof hydrateFromApi === 'function') {
+        hydrateFromApi();
+      }
     });
-    document.getElementById('logout-button').addEventListener('click', async () => { await fetch('http://localhost:5050/api/auth/logout', { method: 'POST' }); appShell.classList.remove('authenticated'); loginScreen.hidden = false; loginForm.reset(); });
-    checkSession();
   </script>
   <script>
     document.getElementById('estimate-form').addEventListener('submit', event => {
+      event.preventDefault();
       const form = event.target;
-      const estimate = estimates[0];
-      if (!estimate) return;
-      estimate.scope = {
-        item: form.elements.scopeItem.value,
-        description: form.elements.scopeDescription.value,
-        dimensions: form.elements.dimensions.value
-      };
-      estimate.items = [...document.querySelectorAll('#estimate-items .quotation-item')].map(row => ({
+      const selectedProject = projects.find(project => project.name === form.elements.project.value);
+      const items = [...document.querySelectorAll('#estimate-items .estimate-item-row')].map(row => ({
         description: row.querySelector('[name="itemDescription"]').value,
-        quantity: row.querySelector('[name="itemQuantity"]').value,
-        unitPrice: row.querySelector('[name="itemUnitPrice"]').value,
-        amount: row.querySelector('[name="itemAmount"]').value
+        quantity: Number(row.querySelector('[name="itemQuantity"]').value) || 0,
+        unit: row.querySelector('[name="itemUnit"]').value,
+        unitPrice: Number(row.querySelector('[name="itemUnitPrice"]').value) || 0,
+        amount: row.querySelector('[name="itemAmount"]').textContent,
+        category: row.dataset.category
       }));
-      estimate.materialsTotal = form.elements.materialsTotal.value;
-      estimate.transportation = form.elements.transportation.value;
-      estimate.subtotal = form.elements.subtotal.value;
-      estimate.workmanship = form.elements.workmanship.value;
-      estimate.notes = form.elements.notes.value;
-      estimate.preparedBy = form.elements.preparedBy.value;
-      estimate.approvedBy = form.elements.approvedBy.value;
-      setTimeout(() => document.querySelectorAll('#app-content .full-table tbody tr').forEach(row => {
-        row.addEventListener('click', () => openEstimateDetail(row.querySelector('.project-name')?.textContent));
-      }), 0);
+      const materials = items.filter(item => item.category !== 'labor').reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+      const labor = items.filter(item => item.category === 'labor').reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+      const transportation = Number(form.elements.transportation.value) || 0;
+      const other = Number(form.elements.other.value) || 0;
+      const total = materials + labor + transportation + other;
+      const currency = value => `US$ ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const savedEstimate = {
+        number: form.elements.number.value,
+        project: selectedProject?.name || form.elements.project.value,
+        client: selectedProject?.client || form.elements.clientName.value,
+        date: new Date(`${form.elements.date.value}T00:00:00`).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' }),
+        validUntil: form.elements.validUntil.value,
+        amount: currency(total),
+        status: 'Pending approval',
+        scope: { item: selectedProject?.name || '', description: form.elements.scopeOfWork.value, dimensions: form.elements.projectLocation.value },
+        items,
+        materialsTotal: currency(materials),
+        labor: currency(labor),
+        transportation,
+        other,
+        subtotal: currency(materials + transportation + other),
+        workmanship: labor,
+        amountInWords: receiptWords(total),
+        clientPhone: form.elements.clientPhone.value,
+        clientAddress: form.elements.clientAddress.value,
+        projectLocation: form.elements.projectLocation.value,
+        startDate: form.elements.startDate.value,
+        paymentSchedule: ['deposit', 'second', 'third', 'final'].map((name, index) => ({
+          payment: ['Initial Deposit', 'Second Payment', 'Third Payment', 'Final Payment'][index],
+          amount: Number(form.elements[`${name}Amount`].value) || 0,
+          due: form.elements[`${name}Due`].value
+        })),
+        terms: [...form.querySelectorAll('.estimate-terms li')].map(item => item.textContent),
+        preparedBy: form.elements.preparedBy.value,
+        preparedSignature: form.elements.preparedSignature.value,
+        preparedDate: form.elements.preparedDate.value,
+        approvedBy: form.elements.approvedBy.value,
+        clientSignature: form.elements.clientSignature.value,
+        clientApprovalDate: form.elements.clientApprovalDate.value
+      };
+      const existingEstimateIndex = estimates.findIndex(item => item.number === savedEstimate.number);
+      if (existingEstimateIndex >= 0) estimates[existingEstimateIndex] = savedEstimate;
+      else estimates.unshift(savedEstimate);
+      closeEstimateModal();
+      setView('estimates');
     });
     function openEstimateDetail(number) {
       const estimate = estimates.find(item => item.number === number);
@@ -353,7 +415,20 @@
       const phone = worker.phone || '';
       const assignedProjects = (worker.projects || []).map(item => ({ name: item.project?.name || item.project?.projectNumber || item.projectName, position: item.position || 'Position not recorded' })).filter(item => item.name);
       document.getElementById('app-content').innerHTML = `<div class="view-title"><div><div class="eyebrow">WORKER PROFILE</div><h1>${worker.fullName}</h1><p>${worker.workerNumber} · ${worker.skill || 'Skill not specified'}</p></div><button class="button button-ghost" id="back-to-workers">← Back to workers</button></div><div class="worker-detail-grid"><section class="panel worker-contact-panel"><div class="avatar avatar-dark">${worker.fullName.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><h2>${worker.fullName}</h2><p>${worker.skill || 'Skill not specified'}</p><p>${phone || 'No phone number recorded'}</p><p>${money(Number(worker.rate) || 0)} · ${worker.ratePeriod || 'Daily'}</p><div class="worker-contact-actions">${phone ? `<a class="button button-primary" href="tel:${phone.replace(/[^+\d]/g, '')}">☎ Call worker</a><a class="button button-ghost" target="_blank" rel="noopener" href="https://wa.me/${phone.replace(/[^\d]/g, '')}">WhatsApp</a>` : '<span class="project-client">Add a phone number to contact this worker.</span>'}</div></section><section class="panel"><div class="panel-header"><div><h2>Worker information</h2><p>Contact and pay details for administration.</p></div><strong>${worker.workerNumber}</strong></div><div class="worker-info-list"><div><span>Full name</span><strong>${worker.fullName}</strong></div><div><span>Phone / WhatsApp</span><strong>${phone || 'Not recorded'}</strong></div><div><span>Skill</span><strong>${worker.skill || 'Not specified'}</strong></div><div><span>Rate</span><strong>${money(Number(worker.rate) || 0)} per ${worker.ratePeriod || 'day'}</strong></div></div><h3 class="worker-projects-heading">Assigned projects</h3><div class="client-project-list">${assignedProjects.length ? assignedProjects.map(project => `<div class="client-project-row"><strong>${project}</strong></div>`).join('') : '<div class="empty-state">No projects assigned yet.</div>'}</div></section></div>`;
+      const workerAvatar = document.querySelector('.worker-contact-panel .avatar');
+      if (worker.photoDataUrl?.startsWith('data:image/jpeg;base64,') && workerAvatar) {
+        const workerPhoto = document.createElement('img');
+        workerPhoto.className = 'worker-passport-photo';
+        workerPhoto.src = worker.photoDataUrl;
+        workerPhoto.alt = `${worker.fullName} passport-size photo`;
+        workerAvatar.replaceWith(workerPhoto);
+      }
       document.querySelectorAll('.worker-projects-heading + .client-project-list .client-project-row').forEach((row, index) => { const assignment = assignedProjects[index]; row.innerHTML = `<span><strong>${assignment.name}</strong><small>${assignment.position}</small></span>`; });
+      const escapeWorkerText = value => String(value ?? 'Not recorded').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+      const employmentPanel = document.createElement('section');
+      employmentPanel.className = 'panel worker-record-details';
+      employmentPanel.innerHTML = `<div class="panel-header"><div><h2>Employment record</h2><p>Current status and worker details</p></div><span class="status ${worker.status === 'Inactive' ? 'status-review' : 'status-progress'}">${escapeWorkerText(worker.status || 'Active')}</span></div><div class="worker-info-list"><div><span>Address</span><strong>${escapeWorkerText(worker.address)}</strong></div><div><span>Employment type</span><strong>${escapeWorkerText(worker.employmentType)}</strong></div><div><span>Date hired</span><strong>${worker.dateHired ? new Date(worker.dateHired).toLocaleDateString() : 'Not recorded'}</strong></div><div><span>Emergency contact</span><strong>${escapeWorkerText(worker.emergencyContactName)} · ${escapeWorkerText(worker.emergencyContactPhone)}</strong></div><div><span>ID / document</span><strong>${escapeWorkerText(worker.idDocumentType)} · ${escapeWorkerText(worker.idDocumentNumber)}</strong></div><div><span>Attendance</span><strong>${escapeWorkerText(worker.attendanceStatus)}</strong></div><div><span>Attendance notes</span><strong>${escapeWorkerText(worker.attendanceNotes)}</strong></div><div><span>Work hours</span><strong>${Number(worker.workHours) || 0}</strong></div><div><span>Amount owed</span><strong>${money(Number(worker.amountOwed) || 0)}</strong></div></div>`;
+      document.querySelector('.worker-detail-grid')?.appendChild(employmentPanel);
       const payments = workerPayments.filter(payment => payment.workerId === worker.id || payment.WorkerId === worker.id);
       const paymentPanel = document.createElement('section');
       paymentPanel.className = 'panel worker-payments-panel';
@@ -422,7 +497,7 @@
         if (!response.ok) throw new Error('payment failed');
         const saved = await response.json(); payment.id = saved.id; payment.receiptNumber = saved.receiptNumber; payment.project = { name: project.name };
       } catch (error) { payment.id = `local-${Date.now()}`; payment.project = { name: project.name }; }
-      workerPayments.unshift(payment); closeWorkerPaymentModal(); showWorkerReceipt(payment); openWorkerDetail(worker.workerNumber);
+      worker.amountOwed = Math.max(0, Number(worker.amountOwed) - payment.amount); workerPayments.unshift(payment); closeWorkerPaymentModal(); showWorkerReceipt(payment); openWorkerDetail(worker.workerNumber);
     }
     function showWorkerReceipt(payment) { document.getElementById('worker-receipt-content').innerHTML = `<div class="receipt-brand"><div class="modal-eyebrow">SMART CONSTRUCTION HUB</div><h2 id="worker-receipt-title">Worker payment receipt</h2><span>Official digital record</span></div><div class="receipt-meta"><div><span>Receipt number</span><strong>${payment.receiptNumber}</strong></div><div><span>Date and time</span><strong>${new Date(payment.paymentDate).toLocaleString()}</strong></div></div><div class="receipt-party"><div><span>Paid to</span><strong>${payment.worker?.fullName || payment.workerName}</strong></div><div><span>Project</span><strong>${payment.project?.name || payment.projectName}</strong></div><div><span>Payment method</span><strong>${payment.paymentMethod || 'Not specified'}</strong></div></div><div class="receipt-total"><span>Amount paid</span><strong>${money(Number(payment.amount))}</strong></div>${payment.notes ? `<p class="receipt-note">Note: ${payment.notes}</p>` : ''}<p class="receipt-thanks">Payment recorded successfully.</p>`; document.getElementById('worker-receipt-modal-backdrop').hidden = false; }
     function closeWorkerReceipt() { document.getElementById('worker-receipt-modal-backdrop').hidden = true; }

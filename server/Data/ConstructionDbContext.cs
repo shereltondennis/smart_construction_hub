@@ -32,6 +32,8 @@ public class ConstructionDbContext(DbContextOptions<ConstructionDbContext> optio
         modelBuilder.Entity<Material>().Property(x => x.QuantityPurchased).HasPrecision(18, 3);
         modelBuilder.Entity<Material>().Property(x => x.QuantityUsed).HasPrecision(18, 3);
         modelBuilder.Entity<Worker>().Property(x => x.Rate).HasPrecision(18, 2);
+        modelBuilder.Entity<Worker>().Property(x => x.WorkHours).HasPrecision(18, 2);
+        modelBuilder.Entity<Worker>().Property(x => x.AmountOwed).HasPrecision(18, 2);
         modelBuilder.Entity<ProjectWorker>().Property(x => x.AmountPaid).HasPrecision(18, 2);
         modelBuilder.Entity<ProjectWorker>().HasKey(x => new { x.ProjectId, x.WorkerId });
         modelBuilder.Entity<WorkerPayment>().Property(x => x.Amount).HasPrecision(18, 2);

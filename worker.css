@@ -1,0 +1,20 @@
+.worker-modal{max-height:calc(100vh - 32px);overflow:auto}
+.worker-modal .form-grid{align-items:start}
+.worker-modal .form-grid label{min-width:0}
+.worker-modal .form-grid input,.worker-modal .form-grid select,.worker-modal .form-grid textarea{width:100%;min-width:0}
+.worker-modal .form-wide{grid-column:1/-1}
+.worker-photo-field{display:grid;gap:8px;min-width:0}
+.worker-photo-label{font-size:11px;font-weight:700;color:#69756f}
+.worker-photo-control{display:flex;align-items:center;gap:14px;min-width:0}
+.worker-photo-frame{display:grid;place-items:center;flex:0 0 88px;aspect-ratio:3/4;overflow:hidden;border:1px dashed #aebbb4;border-radius:4px;background:#f4f6f3;color:#81908a;text-align:center;font-size:10px}
+.worker-photo-frame img{width:100%;height:100%;object-fit:cover}
+.worker-photo-inputs{display:grid;gap:7px;min-width:0}
+.worker-photo-inputs input{max-width:100%;font-size:11px}
+.worker-photo-inputs small{color:#81908a;font-size:10px}
+.worker-photo-inputs .text-button{justify-self:start}
+.worker-passport-photo{display:block;width:96px;height:128px;object-fit:cover;margin:0 auto 14px;border:1px solid #dce5df;border-radius:4px;background:#f4f6f3}
+.worker-record-details{grid-column:1/-1}
+.worker-record-details .worker-info-list{grid-template-columns:repeat(3,minmax(0,1fr));padding:0 18px 12px}
+.worker-record-details .worker-info-list strong{overflow-wrap:anywhere}
+@media(max-width:800px){.worker-modal{width:min(640px,calc(100vw - 24px));padding:22px}.worker-record-details .worker-info-list{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.worker-modal .form-grid{grid-template-columns:1fr}.worker-modal .form-wide{grid-column:auto}.worker-record-details .worker-info-list{grid-template-columns:1fr}}

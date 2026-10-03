@@ -26,7 +26,9 @@ try {
     $query = @"
 IF DB_ID(N'SmartConstructionHub') IS NULL
     CREATE DATABASE [SmartConstructionHub];
-IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'$login')
+IF EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'$login')
+    ALTER LOGIN [$login] WITH PASSWORD = N'$escapedPassword', CHECK_POLICY = ON;
+ELSE
     CREATE LOGIN [$login] WITH PASSWORD = N'$escapedPassword', CHECK_POLICY = ON;
 USE [SmartConstructionHub];
 IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'$login')
@@ -34,9 +36,20 @@ IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'$login')
 ALTER ROLE [db_owner] ADD MEMBER [$login];
 "@
 
-    & $sqlcmd -S $server -E -C -b -Q $query
+    $query | & $sqlcmd -S $server -E -C -b -x
     if ($LASTEXITCODE -ne 0) { throw 'SQL Server did not create the login. Your Windows account may not have SQL Server administrator permission.' }
 
+    $listener = Get-NetTCPConnection -LocalPort 5050 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($listener) {
+        $existingProcess = Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue
+        if ($existingProcess.ProcessName -ne 'SmartConstructionHub.Api') {
+            throw 'Port 5050 is in use by another application. Close it before starting Smart Construction Hub.'
+        }
+        Stop-Process -Id $existingProcess.Id -Force
+        Wait-Process -Id $existingProcess.Id -ErrorAction SilentlyContinue
+    }
+
+    [Environment]::SetEnvironmentVariable('SCH_SQL_PASSWORD', $password, 'User')
     $env:SCH_SQL_PASSWORD = $password
     Set-Location $PSScriptRoot
     Write-Host 'SQL login created. Starting Smart Construction Hub API...' -ForegroundColor Green

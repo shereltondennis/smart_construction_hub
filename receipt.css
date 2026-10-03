@@ -1,0 +1,42 @@
+.receipt-modal{width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:28px;background:#fff}
+.receipt-document{max-width:680px;margin:0 auto;color:#18211f;font:400 13px/1.5 'DM Sans',sans-serif}
+.receipt-heading{text-align:center;border-bottom:2px solid #234d42;padding:4px 0 18px}
+.receipt-logo{display:block;width:70px;height:70px;object-fit:contain;margin:0 auto 8px}
+.receipt-company{font:700 25px/1.15 'Space Grotesk',sans-serif;color:#234d42}
+.receipt-tagline{font:600 13px 'Space Grotesk',sans-serif;margin:5px 0 10px}
+.receipt-contact{font-size:11px;color:#65716d}
+.receipt-title-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:18px 0 8px}
+.receipt-title-row h2{margin:0;font:700 20px 'Space Grotesk',sans-serif}
+.receipt-status{padding:4px 10px;border:1px solid #2f6b5a;color:#2f6b5a;font-size:11px;font-weight:700}
+.receipt-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 22px}
+.receipt-info-grid>div{display:grid;grid-template-columns:max-content 1fr;gap:8px;align-items:start;padding:7px 0;border-bottom:1px solid #e6e9e6}
+.receipt-info-grid span,.receipt-signatures span{color:#65716d}
+.receipt-info-grid strong,.receipt-signatures strong{font-weight:600;overflow-wrap:anywhere}
+.receipt-wide{grid-column:1/-1}
+.receipt-section{margin-top:18px}
+.receipt-section h3{margin:0 0 8px;font:700 12px 'Space Grotesk',sans-serif;letter-spacing:.4px;color:#234d42}
+.receipt-breakdown{width:100%;border-collapse:collapse;font-size:12px}
+.receipt-breakdown th,.receipt-breakdown td{padding:8px 10px;border:1px solid #dce5df;text-align:left;vertical-align:top}
+.receipt-breakdown th{background:#f2f6f3;color:#234d42;font-weight:700}
+.receipt-breakdown td:last-child{font-weight:500}
+.receipt-breakdown .receipt-highlight td{font-weight:700;background:#f7faf7}
+.receipt-breakdown .receipt-highlight td:last-child{color:#234d42;font-size:14px}
+.receipt-breakdown .receipt-balance-row td{font-weight:700;border-top:2px solid #234d42}
+.receipt-confirmation>p{margin:0;color:#414b47;font-size:12px}
+.receipt-signoff{display:grid;grid-template-columns:minmax(0,1fr) 142px;gap:22px;margin-top:17px}
+.receipt-signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}
+.receipt-signatures>div{display:grid;gap:2px;min-width:0}
+.receipt-signatures .receipt-signature-line{grid-column:1/-1;margin-top:6px}
+.receipt-signature-rule{display:block;width:240px;max-width:100%;border-bottom:1px solid #64716b;color:transparent;height:9px}
+.receipt-verification{display:grid;align-content:start;justify-items:center;gap:5px;border:1px solid #dce5df;padding:10px;text-align:center;font-size:10px}
+.receipt-verification>strong{font-size:11px}
+.receipt-verification>span{overflow-wrap:anywhere}
+.receipt-qr{display:grid;place-content:center;width:82px;aspect-ratio:1;border:1px dashed #81908a;margin-top:3px;color:#65716d;font:700 11px/1.5 'Space Grotesk',sans-serif}
+.receipt-generated{margin-top:20px;padding-top:10px;border-top:1px solid #dce5df;text-align:center;color:#65716d;font-size:10px}
+.receipt-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;border-top:1px solid #dce5df;margin-top:18px;padding-top:16px}
+.receipt-actions button{min-height:38px;padding:8px 11px;border:1px solid #cbd8d0;background:#fff;color:#234d42;font:600 11px 'DM Sans',sans-serif;cursor:pointer}
+.receipt-actions button:hover{background:#f2f6f3}
+.receipt-actions button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:560px){.receipt-modal{padding:18px}.receipt-company{font-size:20px}.receipt-info-grid{grid-template-columns:1fr}.receipt-wide{grid-column:auto}.receipt-signoff{grid-template-columns:1fr}.receipt-verification{grid-template-columns:1fr auto;justify-items:start;text-align:left}.receipt-qr{grid-column:2;grid-row:1/3}.receipt-actions{display:grid;grid-template-columns:1fr 1fr}.receipt-actions button{width:100%}}
+@page{size:auto;margin:14mm}
+@media print{body *{visibility:hidden!important}#receipt-modal-backdrop,#receipt-modal-backdrop *{visibility:visible!important}#receipt-modal-backdrop{position:static!important;display:block!important;inset:auto!important;padding:0!important;background:#fff!important}#receipt-modal-backdrop .receipt-modal{position:static!important;width:100%!important;max-height:none!important;overflow:visible!important;padding:0!important;box-shadow:none!important;border:0!important}#receipt-modal-backdrop .receipt-actions,#receipt-modal-backdrop .modal-close{display:none!important}#worker-receipt-modal-backdrop{display:none!important}.receipt-document{max-width:none!important}}

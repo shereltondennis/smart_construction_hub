@@ -9,6 +9,19 @@ public static class DatabaseInitializer
     {
         await db.Database.EnsureCreatedAsync();
         await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('ProjectWorkers', 'Position') IS NULL ALTER TABLE ProjectWorkers ADD Position NVARCHAR(120) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'Address') IS NULL ALTER TABLE Workers ADD Address NVARCHAR(300) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'EmploymentType') IS NULL ALTER TABLE Workers ADD EmploymentType NVARCHAR(40) NOT NULL CONSTRAINT DF_Workers_EmploymentType DEFAULT N'Full-time';");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'DateHired') IS NULL ALTER TABLE Workers ADD DateHired DATE NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'EmergencyContactName') IS NULL ALTER TABLE Workers ADD EmergencyContactName NVARCHAR(160) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'EmergencyContactPhone') IS NULL ALTER TABLE Workers ADD EmergencyContactPhone NVARCHAR(40) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'IdDocumentType') IS NULL ALTER TABLE Workers ADD IdDocumentType NVARCHAR(80) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'IdDocumentNumber') IS NULL ALTER TABLE Workers ADD IdDocumentNumber NVARCHAR(100) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'PhotoDataUrl') IS NULL ALTER TABLE Workers ADD PhotoDataUrl NVARCHAR(MAX) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'AttendanceStatus') IS NULL ALTER TABLE Workers ADD AttendanceStatus NVARCHAR(30) NOT NULL CONSTRAINT DF_Workers_AttendanceStatus DEFAULT N'Not recorded';");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'AttendanceNotes') IS NULL ALTER TABLE Workers ADD AttendanceNotes NVARCHAR(500) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'WorkHours') IS NULL ALTER TABLE Workers ADD WorkHours DECIMAL(18,2) NOT NULL CONSTRAINT DF_Workers_WorkHours DEFAULT 0;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'AmountOwed') IS NULL ALTER TABLE Workers ADD AmountOwed DECIMAL(18,2) NOT NULL CONSTRAINT DF_Workers_AmountOwed DEFAULT 0;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'Status') IS NULL ALTER TABLE Workers ADD Status NVARCHAR(20) NOT NULL CONSTRAINT DF_Workers_Status DEFAULT N'Active';");
         await db.Database.ExecuteSqlRawAsync("IF OBJECT_ID('WorkerPayments', 'U') IS NULL CREATE TABLE WorkerPayments (Id INT IDENTITY PRIMARY KEY, WorkerId INT NOT NULL, ProjectId INT NOT NULL, PaymentDate DATETIME2 NOT NULL, Amount DECIMAL(18,2) NOT NULL, PaymentMethod NVARCHAR(40), ReceiptNumber NVARCHAR(80) NOT NULL UNIQUE, Notes NVARCHAR(500), FOREIGN KEY (WorkerId) REFERENCES Workers(Id) ON DELETE CASCADE, FOREIGN KEY (ProjectId) REFERENCES Projects(Id) ON DELETE CASCADE);");
 
         if (await db.Clients.AnyAsync())

@@ -100,9 +100,22 @@ public class Worker
     public string WorkerNumber { get; set; } = "";
     public string FullName { get; set; } = "";
     public string? Phone { get; set; }
+    public string? Address { get; set; }
     public string? Skill { get; set; }
+    public string EmploymentType { get; set; } = "Full-time";
+    public DateOnly? DateHired { get; set; }
+    public string? EmergencyContactName { get; set; }
+    public string? EmergencyContactPhone { get; set; }
+    public string? IdDocumentType { get; set; }
+    public string? IdDocumentNumber { get; set; }
+    public string? PhotoDataUrl { get; set; }
+    public string AttendanceStatus { get; set; } = "Not recorded";
+    public string? AttendanceNotes { get; set; }
+    public decimal WorkHours { get; set; }
     public decimal Rate { get; set; }
     public string RatePeriod { get; set; } = "Daily";
+    public decimal AmountOwed { get; set; }
+    public string Status { get; set; } = "Active";
     public ICollection<ProjectWorker> Projects { get; set; } = new List<ProjectWorker>();
     public ICollection<WorkerPayment> Payments { get; set; } = new List<WorkerPayment>();
 }
