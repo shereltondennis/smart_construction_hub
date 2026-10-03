@@ -1,0 +1,21 @@
+@media (max-width: 700px) {
+  .app-shell.nav-open::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 4;
+    background: rgba(24, 33, 31, .35);
+  }
+
+  .sidebar {
+    z-index: 5;
+  }
+
+  .mobile-menu {
+    position: relative;
+    z-index: 6;
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+}

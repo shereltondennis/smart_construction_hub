@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="activity-menu.css" />
+  <link rel="stylesheet" href="mobile-navigation.css" />
   <link rel="stylesheet" href="receipt.css" />
   <link rel="stylesheet" href="estimate.css" />
   <link rel="stylesheet" href="worker.css" />
@@ -42,7 +44,7 @@
 
     <main class="main-content">
       <header class="topbar">
-        <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation">☰</button>
+        <button class="mobile-menu" id="mobile-menu" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">☰</button>
         <div class="breadcrumb"><span>Workspace</span><i>/</i><strong id="breadcrumb-title">SCH Dashboard</strong></div>
         <div class="top-actions">
           <button class="icon-button" aria-label="Search" id="focus-search">⌕</button>

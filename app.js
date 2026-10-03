@@ -67,6 +67,60 @@ let projects = [
 let activeView = 'overview';
 const content = document.getElementById('app-content');
 const progressStorageKey = 'smart-construction-hub-progress-reports';
+const activityReadStorageKey = 'smart-construction-hub-activity-read';
+let allActivityRead = false;
+
+try {
+  allActivityRead = localStorage.getItem(activityReadStorageKey) === 'true';
+} catch (error) {
+  console.warn('Activity read status could not be restored.', error);
+}
+
+const recentActivities = [
+  { icon: '↗', title: 'Payment received from John Doe', detail: '$4,500 · Willow Creek Residence · 2 hours ago' },
+  { icon: '≡', iconClass: 'orange', title: 'Estimate sent for approval', detail: 'Willow Creek Residence · Yesterday' },
+  { icon: '▤', iconClass: 'yellow', title: 'Low stock alert', detail: '2×4 Timber is below reorder level · Yesterday' },
+  { icon: '□', title: 'Contract uploaded', detail: 'Mason Street Renovation · Sep 08' }
+];
+
+function renderActivityList() {
+  return `<div class="activity-list">${recentActivities.map(activity => `
+    <div class="activity${allActivityRead ? ' is-read' : ''}" aria-label="${allActivityRead ? 'Read' : 'Unread'} activity: ${activity.title}">
+      <div class="activity-icon ${activity.iconClass || ''}">${activity.icon}</div>
+      <div><strong>${activity.title}</strong><span>${activity.detail}</span></div>
+    </div>
+  `).join('')}</div>`;
+}
+
+function renderActivityMenu() {
+  return `
+    <div class="activity-menu-wrap">
+      <button class="text-button activity-menu-button" type="button" aria-label="Activity options" aria-haspopup="menu" aria-expanded="false" aria-controls="activity-actions-menu" data-activity-menu-toggle>•••</button>
+      <div class="activity-actions-menu" id="activity-actions-menu" role="menu" hidden>
+        <button type="button" role="menuitem" data-activity-action="view">View all activity</button>
+        <button type="button" role="menuitem" data-activity-action="read"${allActivityRead ? ' disabled' : ''}>Mark all as read</button>
+      </div>
+    </div>
+  `;
+}
+
+function closeActivityMenu() {
+  const toggle = document.querySelector('[data-activity-menu-toggle]');
+  const menu = document.getElementById('activity-actions-menu');
+  if (!toggle || !menu) return;
+  toggle.setAttribute('aria-expanded', 'false');
+  menu.hidden = true;
+}
+
+function setMobileNavigationOpen(isOpen) {
+  const sidebar = document.getElementById('sidebar');
+  const appShell = document.querySelector('.app-shell');
+  const toggle = document.getElementById('mobile-menu');
+  sidebar.classList.toggle('open', isOpen);
+  appShell.classList.toggle('nav-open', isOpen);
+  toggle.setAttribute('aria-expanded', String(isOpen));
+  toggle.setAttribute('aria-label', isOpen ? 'Close navigation' : 'Open navigation');
+}
 
 function restoreProjectProgressReports() {
   try {
@@ -225,15 +279,26 @@ function overview() {
         <table class="project-table"><thead><tr><th>Project</th><th>Type & location</th><th>Status</th><th>Contract value</th><th>Progress</th></tr></thead><tbody>${renderProjectRows(projects)}</tbody></table>
       </section>
       <section class="panel">
-        <div class="panel-header"><div><h2>Recent activity</h2><p>Latest updates across your workspace.</p></div><button class="text-button">•••</button></div>
-        <div class="activity-list">
-          <div class="activity"><div class="activity-icon">↗</div><div><strong>Payment received from John Doe</strong><span>$4,500 · Willow Creek Residence · 2 hours ago</span></div></div>
-          <div class="activity"><div class="activity-icon orange">≡</div><div><strong>Estimate sent for approval</strong><span>Willow Creek Residence · Yesterday</span></div></div>
-          <div class="activity"><div class="activity-icon yellow">▤</div><div><strong>Low stock alert</strong><span>2×4 Timber is below reorder level · Yesterday</span></div></div>
-          <div class="activity"><div class="activity-icon">□</div><div><strong>Contract uploaded</strong><span>Mason Street Renovation · Sep 08</span></div></div>
-        </div>
+        <div class="panel-header"><div><h2>Recent activity</h2><p>${allActivityRead ? 'All updates have been read.' : 'Latest updates across your workspace.'}</p></div>${renderActivityMenu()}</div>
+        ${renderActivityList()}
       </section>
     </div>
+  `;
+}
+
+function activityView() {
+  content.innerHTML = `
+    <div class="view-title">
+      <div>
+        <div class="eyebrow">WORKSPACE UPDATES</div>
+        <h1>Activity</h1>
+        <p>Recent updates across your workspace.</p>
+      </div>
+    </div>
+    <section class="panel">
+      <div class="panel-header"><div><h2>All activity</h2><p>${allActivityRead ? 'All updates have been read.' : 'Latest updates across your workspace.'}</p></div>${renderActivityMenu()}</div>
+      ${renderActivityList()}
+    </section>
   `;
 }
 
@@ -528,6 +593,7 @@ function setView(view) {
 
   const views = {
     overview,
+    activity: activityView,
     projects: projectsView,
     clients: () => {
       content.innerHTML = '<div class="view-title"><div><div class="eyebrow">RELATIONSHIPS</div><h1>Clients</h1><p>View clients and every project connected to them.</p></div></div><div class="cards-grid"><article class="client-card"><div class="avatar avatar-dark">JD</div><h3>John Doe</h3><p>East Legon, Accra</p><p>john.doe@example.com</p><div class="client-project"><strong>2 projects</strong><span>· $36,500 contract value</span></div></article><article class="client-card"><div class="avatar avatar-dark">AM</div><h3>Amara Mensah</h3><p>Cantonments, Accra</p><p>amara.mensah@example.com</p><div class="client-project"><strong>1 project</strong><span>· $12,600 contract value</span></div></article><article class="client-card"><div class="avatar avatar-dark">DK</div><h3>David Kimani</h3><p>Adenta, Accra</p><p>david.kimani@example.com</p><div class="client-project"><strong>1 project</strong><span>· $8,400 contract value</span></div></article><article class="client-card"><div class="avatar avatar-dark">SO</div><h3>Sarah Owusu</h3><p>Labone, Accra</p><p>sarah.owusu@example.com</p><div class="client-project"><strong>1 project</strong><span>· $18,900 contract value</span></div></article></div>';
@@ -550,14 +616,58 @@ function setView(view) {
 }
 
 document.addEventListener('click', event => {
+  const mobileMenuToggle = event.target.closest('#mobile-menu');
+  if (mobileMenuToggle) {
+    setMobileNavigationOpen(mobileMenuToggle.getAttribute('aria-expanded') !== 'true');
+    return;
+  }
+
+  if (document.querySelector('.app-shell.nav-open') &&
+      !event.target.closest('#sidebar') &&
+      !event.target.closest('#mobile-menu')) {
+    setMobileNavigationOpen(false);
+  }
+
+  const menuToggle = event.target.closest('[data-activity-menu-toggle]');
+  if (menuToggle) {
+    const menu = document.getElementById('activity-actions-menu');
+    const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
+    menuToggle.setAttribute('aria-expanded', String(!isExpanded));
+    menu.hidden = isExpanded;
+    if (!isExpanded) menu.querySelector('[role="menuitem"]:not(:disabled)')?.focus();
+    return;
+  }
+
+  const activityAction = event.target.closest('[data-activity-action]');
+  if (activityAction) {
+    const action = activityAction.dataset.activityAction;
+    closeActivityMenu();
+    if (action === 'view') {
+      setView('activity');
+    } else if (action === 'read') {
+      allActivityRead = true;
+      try {
+        localStorage.setItem(activityReadStorageKey, 'true');
+      } catch (error) {
+        console.warn('Activity read status could not be saved.', error);
+      }
+      setView(activeView);
+    }
+    return;
+  }
+
+  if (!event.target.closest('.activity-menu-wrap')) closeActivityMenu();
+
   const navItem = event.target.closest('.nav-item[data-view]');
   if (navItem) {
+    setMobileNavigationOpen(false);
     setView(navItem.dataset.view);
     return;
   }
 
   const viewLink = event.target.closest('[data-view-link]');
   if (viewLink) {
+    setMobileNavigationOpen(false);
     setView(viewLink.dataset.viewLink);
     return;
   }
@@ -566,6 +676,33 @@ document.addEventListener('click', event => {
   if (projectRow) {
     openProject(projectRow.dataset.project);
   }
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && document.querySelector('.app-shell.nav-open')) {
+    setMobileNavigationOpen(false);
+    document.getElementById('mobile-menu').focus();
+  }
+
+  const toggle = document.querySelector('[data-activity-menu-toggle][aria-expanded="true"]');
+  if (!toggle) return;
+  if (event.key === 'Escape') {
+    closeActivityMenu();
+    toggle.focus();
+    return;
+  }
+
+  const items = [...document.querySelectorAll('#activity-actions-menu [role="menuitem"]:not(:disabled)')];
+  if (!items.length) return;
+  const currentIndex = items.indexOf(document.activeElement);
+  let nextIndex;
+  if (event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % items.length;
+  else if (event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + items.length) % items.length;
+  else if (event.key === 'Home') nextIndex = 0;
+  else if (event.key === 'End') nextIndex = items.length - 1;
+  else return;
+  event.preventDefault();
+  items[nextIndex].focus();
 });
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -1,0 +1,72 @@
+.activity-menu-wrap {
+  position: relative;
+  z-index: 2;
+}
+
+.activity-menu-button {
+  display: inline-grid;
+  min-width: 44px;
+  min-height: 44px;
+  place-items: center;
+  border-radius: 6px;
+  font-size: 16px;
+  letter-spacing: 2px;
+  touch-action: manipulation;
+}
+
+.activity-menu-button:hover,
+.activity-menu-button[aria-expanded="true"] {
+  background: #f3f6f3;
+}
+
+.activity-menu-button:focus-visible,
+.activity-actions-menu button:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.activity-actions-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 10;
+  width: max-content;
+  min-width: 190px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  box-shadow: 0 8px 24px rgba(24, 33, 31, .15);
+}
+
+.activity-actions-menu[hidden] {
+  display: none;
+}
+
+.activity-actions-menu button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink);
+  font: 500 12px 'DM Sans', sans-serif;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.activity-actions-menu button:hover:not(:disabled) {
+  background: #f3f6f3;
+}
+
+.activity-actions-menu button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.activity.is-read {
+  opacity: .65;
+}
