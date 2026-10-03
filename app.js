@@ -68,7 +68,32 @@ let activeView = 'overview';
 const content = document.getElementById('app-content');
 const progressStorageKey = 'smart-construction-hub-progress-reports';
 const activityReadStorageKey = 'smart-construction-hub-activity-read';
+const businessSettingsStorageKey = 'smart-construction-hub-business-settings';
+const defaultBusinessSettings = {
+  companyName: 'Smart Construction Hub',
+  email: '',
+  phone: '',
+  address: '',
+  currency: 'USD'
+};
+const supportedCurrencies = ['USD', 'GHS', 'LRD'];
 let allActivityRead = false;
+let businessSettings = { ...defaultBusinessSettings };
+
+try {
+  const savedSettings = JSON.parse(localStorage.getItem(businessSettingsStorageKey) || 'null');
+  if (savedSettings && typeof savedSettings === 'object') {
+    businessSettings = {
+      companyName: typeof savedSettings.companyName === 'string' ? savedSettings.companyName : defaultBusinessSettings.companyName,
+      email: typeof savedSettings.email === 'string' ? savedSettings.email : '',
+      phone: typeof savedSettings.phone === 'string' ? savedSettings.phone : '',
+      address: typeof savedSettings.address === 'string' ? savedSettings.address : '',
+      currency: supportedCurrencies.includes(savedSettings.currency) ? savedSettings.currency : defaultBusinessSettings.currency
+    };
+  }
+} catch (error) {
+  console.warn('Business settings could not be restored.', error);
+}
 
 try {
   allActivityRead = localStorage.getItem(activityReadStorageKey) === 'true';
@@ -140,7 +165,59 @@ restoreProjectProgressReports();
 
 function money(value) {
   const amount = Number(value) || 0;
-  return '$' + amount.toLocaleString('en-US');
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: businessSettings.currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(amount);
+}
+
+function applyBusinessSettings() {
+  const companyName = document.querySelector('.brand-copy strong');
+  if (companyName) companyName.textContent = businessSettings.companyName;
+}
+
+function settingsView() {
+  content.innerHTML = `
+    <div class="view-title">
+      <div>
+        <div class="eyebrow">WORKSPACE</div>
+        <h1>Settings</h1>
+        <p>Manage your company details and currency preference.</p>
+      </div>
+    </div>
+    <section class="panel settings-panel">
+      <div class="panel-header">
+        <div><h2>Company profile</h2><p>These details are saved in this browser.</p></div>
+      </div>
+      <form id="business-settings-form" class="settings-form">
+        <div class="form-grid">
+          <label>Company name<input name="companyName" required maxlength="120" /></label>
+          <label>Business email<input name="email" type="email" maxlength="180" /></label>
+          <label>Business phone<input name="phone" type="tel" maxlength="40" /></label>
+          <label>Business address<input name="address" maxlength="300" /></label>
+          <label>Currency
+            <select name="currency">
+              <option value="USD">US dollar (USD)</option>
+              <option value="GHS">Ghanaian cedi (GHS)</option>
+              <option value="LRD">Liberian dollar (LRD)</option>
+            </select>
+          </label>
+        </div>
+        <div class="settings-actions">
+          <span class="settings-save-status" role="status" aria-live="polite"></span>
+          <button class="button button-primary" type="submit">Save settings</button>
+        </div>
+        <p class="settings-storage-note">These preferences are stored on this device only. They do not connect project records to an online database.</p>
+      </form>
+    </section>
+  `;
+
+  const form = document.getElementById('business-settings-form');
+  Object.entries(businessSettings).forEach(([key, value]) => {
+    if (form.elements[key]) form.elements[key].value = value;
+  });
 }
 
 function statusClass(status) {
@@ -594,6 +671,7 @@ function setView(view) {
   const views = {
     overview,
     activity: activityView,
+    settings: settingsView,
     projects: projectsView,
     clients: () => {
       content.innerHTML = '<div class="view-title"><div><div class="eyebrow">RELATIONSHIPS</div><h1>Clients</h1><p>View clients and every project connected to them.</p></div></div><div class="cards-grid"><article class="client-card"><div class="avatar avatar-dark">JD</div><h3>John Doe</h3><p>East Legon, Accra</p><p>john.doe@example.com</p><div class="client-project"><strong>2 projects</strong><span>· $36,500 contract value</span></div></article><article class="client-card"><div class="avatar avatar-dark">AM</div><h3>Amara Mensah</h3><p>Cantonments, Accra</p><p>amara.mensah@example.com</p><div class="client-project"><strong>1 project</strong><span>· $12,600 contract value</span></div></article><article class="client-card"><div class="avatar avatar-dark">DK</div><h3>David Kimani</h3><p>Adenta, Accra</p><p>david.kimani@example.com</p><div class="client-project"><strong>1 project</strong><span>· $8,400 contract value</span></div></article><article class="client-card"><div class="avatar avatar-dark">SO</div><h3>Sarah Owusu</h3><p>Labone, Accra</p><p>sarah.owusu@example.com</p><div class="client-project"><strong>1 project</strong><span>· $18,900 contract value</span></div></article></div>';
@@ -678,6 +756,34 @@ document.addEventListener('click', event => {
   }
 });
 
+document.addEventListener('submit', event => {
+  const form = event.target.closest('#business-settings-form');
+  if (!form) return;
+  event.preventDefault();
+  if (!form.reportValidity()) return;
+
+  const updatedSettings = {
+    companyName: form.elements.companyName.value.trim(),
+    email: form.elements.email.value.trim(),
+    phone: form.elements.phone.value.trim(),
+    address: form.elements.address.value.trim(),
+    currency: form.elements.currency.value
+  };
+
+  try {
+    localStorage.setItem(businessSettingsStorageKey, JSON.stringify(updatedSettings));
+  } catch (error) {
+    console.error('Business settings could not be saved.', error);
+    window.alert('Settings could not be saved in this browser. Check available storage and try again.');
+    return;
+  }
+
+  businessSettings = updatedSettings;
+  applyBusinessSettings();
+  setView(activeView);
+  document.querySelector('.settings-save-status').textContent = 'Settings saved on this device.';
+});
+
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && document.querySelector('.app-shell.nav-open')) {
     setMobileNavigationOpen(false);
@@ -706,5 +812,6 @@ document.addEventListener('keydown', event => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+  applyBusinessSettings();
   setView('overview');
 });
