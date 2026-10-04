@@ -4,7 +4,7 @@ let projects = [
     name: 'Willow Creek Residence',
     client: 'John Doe',
     type: 'New construction',
-    location: 'East Legon, Accra',
+    location: 'Sinkor, Monrovia',
     status: 'In progress',
     amount: 25000,
     paid: 14800,
@@ -20,7 +20,7 @@ let projects = [
     name: 'Mason Street Renovation',
     client: 'Amara Mensah',
     type: 'Renovation',
-    location: 'Cantonments, Accra',
+    location: 'Paynesville, Montserrado County',
     status: 'In progress',
     amount: 12600,
     paid: 8100,
@@ -36,7 +36,7 @@ let projects = [
     name: 'Kofi Roof Replacement',
     client: 'David Kimani',
     type: 'Roofing',
-    location: 'Adenta, Accra',
+    location: 'Gbarnga, Bong County',
     status: 'Awaiting review',
     amount: 8400,
     paid: 8400,
@@ -51,7 +51,7 @@ let projects = [
     name: 'Palm Grove Interiors',
     client: 'Sarah Owusu',
     type: 'Interior finishing',
-    location: 'Labone, Accra',
+    location: 'Buchanan, Grand Bassa County',
     status: 'Complete',
     amount: 18900,
     paid: 18900,
@@ -64,7 +64,41 @@ let projects = [
   }
 ];
 
+const createdProjectsStorageKey = 'smart-construction-hub-created-projects';
+const projectContactsStorageKey = 'smart-construction-hub-project-contacts';
+const projectWorkerAssignmentsStorageKey = 'smart-construction-hub-project-worker-assignments';
+const projectWorkersStorageKey = 'smart-construction-hub-project-workers';
+const estimatePdfDatabaseName = 'smart-construction-hub-documents';
+const estimatePdfStoreName = 'estimate-pdfs';
+let activeEstimatePdfUrl = '';
+let projectWorkers = [];
+const builtInProjectIds = new Set(projects.map(project => project.id));
+
+try {
+  const savedProjects = JSON.parse(localStorage.getItem(createdProjectsStorageKey) || '[]');
+  if (Array.isArray(savedProjects)) {
+    projects.push(...savedProjects.filter(project =>
+      project &&
+      typeof project.id === 'string' &&
+      !builtInProjectIds.has(project.id) &&
+      typeof project.name === 'string' &&
+      typeof project.client === 'string' &&
+      typeof project.type === 'string' &&
+      typeof project.location === 'string' &&
+      Number.isFinite(Number(project.amount))
+    ).map(project => ({
+      ...project,
+      paid: Number(project.paid) || 0,
+      progress: Number(project.progress) || 0,
+      progressReports: Array.isArray(project.progressReports) ? project.progressReports : []
+    })));
+  }
+} catch (error) {
+  console.error('Created projects could not be restored from this browser.', error);
+}
+
 let activeView = 'overview';
+let projectCreationClientName = '';
 const content = document.getElementById('app-content');
 const progressStorageKey = 'smart-construction-hub-progress-reports';
 const activityReadStorageKey = 'smart-construction-hub-activity-read';
@@ -163,6 +197,155 @@ function restoreProjectProgressReports() {
 
 restoreProjectProgressReports();
 
+try {
+  const savedContacts = JSON.parse(localStorage.getItem(projectContactsStorageKey) || '{}');
+  if (savedContacts && typeof savedContacts === 'object' && !Array.isArray(savedContacts)) {
+    projects.forEach(project => {
+      const contacts = savedContacts[project.id];
+      if (!contacts || typeof contacts !== 'object') return;
+      project.clientPhone = typeof contacts.clientPhone === 'string' ? contacts.clientPhone : '';
+      project.whatsapp = typeof contacts.whatsapp === 'string' ? contacts.whatsapp : '';
+      project.clientEmail = typeof contacts.clientEmail === 'string' ? contacts.clientEmail : '';
+    });
+  }
+} catch (error) {
+  console.warn('Saved client contact details could not be restored.', error);
+}
+
+try {
+  const savedWorkers = JSON.parse(localStorage.getItem(projectWorkersStorageKey) || '[]');
+  if (Array.isArray(savedWorkers)) {
+    projectWorkers = savedWorkers.filter(worker =>
+      worker &&
+      typeof worker.workerNumber === 'string' &&
+      typeof worker.fullName === 'string'
+    );
+  }
+} catch (error) {
+  console.error('Saved project workers could not be restored.', error);
+}
+
+try {
+  const savedAssignments = JSON.parse(localStorage.getItem(projectWorkerAssignmentsStorageKey) || '{}');
+  if (savedAssignments && typeof savedAssignments === 'object' && !Array.isArray(savedAssignments)) {
+    projects.forEach(project => {
+      const assignments = savedAssignments[project.id];
+      if (Array.isArray(assignments)) project.workerAssignments = assignments;
+    });
+  }
+} catch (error) {
+  console.error('Project worker assignments could not be restored.', error);
+}
+
+projects.forEach(project => {
+  (project.workerAssignments || []).forEach(assignment => {
+    const worker = assignment.Worker || assignment.worker;
+    if (!worker?.workerNumber || projectWorkers.some(item => item.workerNumber === worker.workerNumber)) return;
+    projectWorkers.push({ ...worker, projects: [{ project: { name: project.name }, position: assignment.Position || assignment.position || '' }] });
+  });
+});
+
+function persistProjectWorkerAssignments() {
+  const savedAssignments = Object.fromEntries(projects.map(project => [
+    project.id,
+    Array.isArray(project.workerAssignments) ? project.workerAssignments : []
+  ]));
+  localStorage.setItem(projectWorkerAssignmentsStorageKey, JSON.stringify(savedAssignments));
+}
+
+function persistProjectWorkers() {
+  localStorage.setItem(projectWorkersStorageKey, JSON.stringify(projectWorkers));
+}
+
+function openEstimatePdfDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(estimatePdfDatabaseName, 1);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(estimatePdfStoreName)) {
+        database.createObjectStore(estimatePdfStoreName, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error('Estimate document storage could not be opened.'));
+  });
+}
+
+async function getEstimatePdfs() {
+  const database = await openEstimatePdfDatabase();
+  return new Promise((resolve, reject) => {
+    const request = database.transaction(estimatePdfStoreName, 'readonly').objectStore(estimatePdfStoreName).getAll();
+    request.onsuccess = () => {
+      database.close();
+      resolve(request.result.sort((left, right) => new Date(right.uploadedAt) - new Date(left.uploadedAt)));
+    };
+    request.onerror = () => {
+      database.close();
+      reject(request.error || new Error('Uploaded estimate documents could not be loaded.'));
+    };
+  });
+}
+
+async function saveEstimatePdf(documentRecord) {
+  const database = await openEstimatePdfDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(estimatePdfStoreName, 'readwrite');
+    transaction.objectStore(estimatePdfStoreName).put(documentRecord);
+    transaction.oncomplete = () => {
+      database.close();
+      resolve();
+    };
+    transaction.onerror = () => {
+      database.close();
+      reject(transaction.error || new Error('Estimate PDF could not be saved.'));
+    };
+    transaction.onabort = () => {
+      database.close();
+      reject(transaction.error || new Error('Estimate PDF save was canceled.'));
+    };
+  });
+}
+
+async function getEstimatePdf(id) {
+  const database = await openEstimatePdfDatabase();
+  return new Promise((resolve, reject) => {
+    const request = database.transaction(estimatePdfStoreName, 'readonly').objectStore(estimatePdfStoreName).get(id);
+    request.onsuccess = () => {
+      database.close();
+      resolve(request.result || null);
+    };
+    request.onerror = () => {
+      database.close();
+      reject(request.error || new Error('Estimate PDF could not be opened.'));
+    };
+  });
+}
+
+function estimatePdfRow(documentRecord) {
+  const project = projects.find(item => item.id === documentRecord.projectId);
+  return `<tr>
+    <td><button class="estimate-pdf-file-link" type="button" data-open-estimate-pdf="${escapeReportHtml(documentRecord.id)}">${escapeReportHtml(documentRecord.fileName)}</button><span class="project-client">${new Date(documentRecord.uploadedAt).toLocaleDateString()}</span></td>
+    <td><strong>${escapeReportHtml(project?.name || documentRecord.projectName)}</strong><span class="project-client">${escapeReportHtml(project?.id || documentRecord.projectId)}</span></td>
+    <td>${escapeReportHtml(project?.client || documentRecord.owner || 'Not recorded')}</td>
+    <td>${escapeReportHtml(project?.location || documentRecord.location || 'Not recorded')}</td>
+    <td><button class="button button-ghost" type="button" data-open-estimate-pdf="${escapeReportHtml(documentRecord.id)}">View PDF</button></td>
+  </tr>`;
+}
+
+async function renderEstimatePdfList(container, emptyMessage) {
+  if (!container) return;
+  container.innerHTML = '<div class="empty-state">Loading uploaded estimate PDFs…</div>';
+  try {
+    const documents = await getEstimatePdfs();
+    container.innerHTML = documents.length
+      ? `<div class="estimate-pdf-table-wrap"><table class="project-table full-table"><thead><tr><th>PDF / uploaded</th><th>Project</th><th>Owner / client</th><th>Location</th><th></th></tr></thead><tbody>${documents.map(estimatePdfRow).join('')}</tbody></table></div>`
+      : `<div class="empty-state">${emptyMessage}</div>`;
+  } catch (error) {
+    console.error('Uploaded estimate PDFs could not be loaded.', error);
+    container.innerHTML = '<div class="empty-state">Uploaded estimate PDFs could not be loaded. Try refreshing this view.</div>';
+  }
+}
+
 function money(value) {
   const amount = Number(value) || 0;
   return new Intl.NumberFormat('en-US', {
@@ -258,10 +441,12 @@ function buildProjectProgressShareText(project, overrideReport = null) {
       const workforce = Object.entries(report.workforce).filter(([, count]) => Number(count) > 0);
       if (workforce.length) lines.push(`Workforce (${report.totalWorkers || workforce.reduce((sum, [, count]) => sum + Number(count), 0)}): ${workforce.map(([trade, count]) => `${trade} ${count}`).join(', ')}`);
     }
-    if (report.completedWork) lines.push(`Work completed: ${report.completedWork}`);
+    if (report.completedWorkItems || report.completedWork) lines.push(`Work completed / current activities: ${report.completedWorkItems || report.completedWork}`);
+    if (report.clientUpdate) lines.push(`Client update: ${report.clientUpdate}`);
+    if (report.scheduleStatus) lines.push(`Status: ${report.scheduleStatus}`);
     if (report.activities?.length) {
-      lines.push('Work quantities:');
-      report.activities.forEach(activity => lines.push(`- ${activity.activity}${activity.location ? `, ${activity.location}` : ''}: ${activity.completedQty || 0}${activity.unit ? ` ${activity.unit}` : ''} of ${activity.plannedQty || 0}${activity.unit ? ` ${activity.unit}` : ''} (${activity.percentComplete || 0}%)`));
+      lines.push('Work area progress:');
+      report.activities.forEach(activity => lines.push(`- ${activity.activity}: ${activity.percentComplete || 0}% · ${activity.status || 'In progress'}`));
     }
     if (report.materials?.length) {
       lines.push('Materials used:');
@@ -271,10 +456,9 @@ function buildProjectProgressShareText(project, overrideReport = null) {
       lines.push(`Expenses: ${report.expenses.map(expense => `${expense.description} ${money(Number(expense.amount) || 0)}`).join('; ')}`);
     }
     if (report.issues?.length) lines.push(`Site issues/delays: ${report.issues.join(', ')}`);
-    if (report.issueDetails) lines.push(`Issue details: ${report.issueDetails}`);
+    if (report.issueDetails) lines.push(`Issues / delays: ${report.issueDetails}`);
     if (report.beforeWork) lines.push(`Before work: ${report.beforeWork}`);
     if (report.inProgressWork) lines.push(`Work in progress: ${report.inProgressWork}`);
-    if (report.completedWorkItems) lines.push(`Completed work: ${report.completedWorkItems}`);
     if (report.defects) lines.push(`Problems/defects: ${report.defects}`);
     if (report.tomorrowPlan) lines.push(`Tomorrow's plan: ${report.tomorrowPlan}`);
     if (report.photos?.length) lines.push(`Photos: ${report.photos.map(photo => photo.caption || photo.name).join('; ')}`);
@@ -285,11 +469,38 @@ function buildProjectProgressShareText(project, overrideReport = null) {
   return lines.join('\n').trim();
 }
 
-async function shareProjectProgressWithClient(projectId, overrideReport = null) {
+async function shareProjectProgressWithClient(projectId, overrideReport = null, shareWindow = null) {
   const project = projects.find(item => item.id === projectId);
-  if (!project) return;
+  if (!project) {
+    shareWindow?.close();
+    return;
+  }
 
   const shareText = buildProjectProgressShareText(project, overrideReport);
+
+  if (project.whatsapp) {
+    const whatsappNumber = project.whatsapp.replace(/\D/g, '');
+    if (!/^\d{7,15}$/.test(whatsappNumber)) {
+      shareWindow?.close();
+      window.alert('The client WhatsApp number must include the country code and contain 7 to 15 digits.');
+      return;
+    }
+
+    if (!shareWindow) {
+      window.alert('Your report was saved, but WhatsApp could not open. Allow pop-ups for this site and try sharing again.');
+      return;
+    }
+
+    shareWindow.location.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(shareText)}`;
+    window.alert('WhatsApp opened with the progress report addressed to the client. Review it and press Send.');
+    return;
+  }
+
+  if (!project.clientEmail) {
+    shareWindow?.close();
+    window.alert('Report saved, but no client WhatsApp number or email is recorded. Add contact details to this project to share reports.');
+    return;
+  }
 
   try {
     if (navigator.clipboard && window.isSecureContext) {
@@ -304,14 +515,17 @@ async function shareProjectProgressWithClient(projectId, overrideReport = null) 
     }
   } catch (error) {
     const copied = window.prompt('Copy this project progress report to send to the client:', shareText);
-    if (copied === null) return;
+    if (copied === null) {
+      shareWindow?.close();
+      return;
+    }
   }
 
   const subject = encodeURIComponent(`Project progress update - ${project.name}`);
   const body = encodeURIComponent(shareText);
-  const mailto = `mailto:${project.clientEmail || ''}?subject=${subject}&body=${body}`;
-  window.location.href = mailto;
-  window.alert('Progress report copied and ready to share with the client.');
+  if (shareWindow) shareWindow.location.href = `mailto:${project.clientEmail}?subject=${subject}&body=${body}`;
+  else window.location.href = `mailto:${project.clientEmail}?subject=${subject}&body=${body}`;
+  window.alert('Progress report copied and ready to share with the client by email.');
 }
 
 function renderProjectRows(items) {
@@ -345,7 +559,7 @@ function overview() {
       <button class="button button-primary" data-view-link="projects">＋ View projects <span>→</span></button>
     </div>
     <div class="dashboard-grid">
-      <div class="metric"><div class="metric-label">Active projects <span class="metric-icon">▱</span></div><strong>12</strong><div class="metric-foot"><span class="positive">↑ 2</span> from last month</div></div>
+      <div class="metric"><div class="metric-label">Active projects <span class="metric-icon">▱</span></div><strong>${projects.filter(project => project.status !== 'Complete').length}</strong><div class="metric-foot">Projects in progress</div></div>
       <div class="metric metric-orange"><div class="metric-label">Total outstanding <span class="metric-icon">◒</span></div><strong>$18,450</strong><div class="metric-foot"><span class="positive">↓ 8.4%</span> from last month</div></div>
       <div class="metric metric-yellow"><div class="metric-label">Payments this month <span class="metric-icon">↗</span></div><strong>$9,250</strong><div class="metric-foot"><span class="positive">↑ 12.6%</span> from last month</div></div>
       <div class="metric"><div class="metric-label">Inventory items <span class="metric-icon">▤</span></div><strong>143</strong><div class="metric-foot">8 items need restocking</div></div>
@@ -387,6 +601,7 @@ function projectsView() {
         <h1>Projects</h1>
         <p>Every job, client, payment and plan in one connected view.</p>
       </div>
+      <button class="button button-primary" id="add-project-button" type="button">＋ New project</button>
     </div>
     <section class="panel view-table-panel">
       <table class="project-table full-table"><thead><tr><th>Project</th><th>Type & location</th><th>Status</th><th>Contract value</th><th>Progress</th></tr></thead><tbody>${renderProjectRows(projects)}</tbody></table>
@@ -394,10 +609,84 @@ function projectsView() {
   `;
 }
 
-const workforceTrades = ['Carpenters', 'Masons', 'Electricians', 'Plumbers', 'Roofers', 'General laborers', 'Supervisor'];
+function getClientProjects(clientName) {
+  const normalizedName = clientName.trim().toLocaleLowerCase();
+  return projects.filter(project => project.client.trim().toLocaleLowerCase() === normalizedName);
+}
+
+function renderClientCards() {
+  const clients = [...new Map(projects.map(project => [project.client.trim().toLocaleLowerCase(), project.client.trim()])).values()];
+  if (!clients.length) return '<section class="panel empty-state"><strong>No clients recorded yet.</strong><p>Add a project to create a connected client record.</p></section>';
+
+  return `<div class="cards-grid">${clients.map(clientName => {
+    const clientProjects = getClientProjects(clientName);
+    const client = clientProjects.find(project => project.clientPhone || project.whatsapp || project.clientEmail) || clientProjects[0];
+    const locations = [...new Set(clientProjects.map(project => project.location).filter(Boolean))];
+    const initials = clientName.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+    const contact = client.whatsapp || client.clientPhone || client.clientEmail || 'Contact details not recorded';
+    const totalValue = clientProjects.reduce((sum, project) => sum + (Number(project.amount) || 0), 0);
+
+    return `<article class="client-card client-card-interactive"><button class="client-card-open" type="button" data-client-name="${escapeReportHtml(clientName)}"><span class="avatar avatar-dark">${escapeReportHtml(initials)}</span><h3>${escapeReportHtml(clientName)}</h3><p>${escapeReportHtml(locations.join(' · ') || 'Location not recorded')}</p><p>${escapeReportHtml(contact)}</p><div class="client-project"><strong>${clientProjects.length} ${clientProjects.length === 1 ? 'project' : 'projects'}</strong><span>· ${money(totalValue)} total value</span></div><span class="client-open-hint">View client details →</span></button></article>`;
+  }).join('')}</div>`;
+}
+
+function clientsView() {
+  content.innerHTML = `
+    <div class="view-title">
+      <div><div class="eyebrow">RELATIONSHIPS</div><h1>Clients</h1><p>Review client details and the projects connected to each client.</p></div>
+    </div>
+    ${renderClientCards()}
+  `;
+}
+
+function openClientDetail(clientName) {
+  const clientProjects = getClientProjects(clientName);
+  if (!clientProjects.length) {
+    window.alert('No projects are linked to this client.');
+    setView('clients');
+    return;
+  }
+
+  const client = clientProjects.find(project => project.clientPhone || project.whatsapp || project.clientEmail) || clientProjects[0];
+  const locations = [...new Set(clientProjects.map(project => project.location).filter(Boolean))];
+  const initials = clientName.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+  const phone = client.clientPhone || client.whatsapp || '';
+  const whatsappNumber = (client.whatsapp || client.clientPhone || '').replace(/\D/g, '');
+  const totalValue = clientProjects.reduce((sum, project) => sum + (Number(project.amount) || 0), 0);
+  const outstanding = clientProjects.reduce((sum, project) => sum + Math.max(0, (Number(project.amount) || 0) - (Number(project.paid) || 0)), 0);
+  const projectRows = clientProjects.map(project => `
+    <button class="client-project-row" type="button" data-client-project="${escapeReportHtml(project.id)}">
+      <span><strong>${escapeReportHtml(project.name)}</strong><small>${escapeReportHtml(project.id)} · ${escapeReportHtml(project.type)} · ${escapeReportHtml(project.location)}</small></span>
+      <span class="status ${statusClass(project.status)}">${escapeReportHtml(project.status)}</span>
+      <strong>${money(project.amount)}</strong>
+      <span class="client-project-progress">${Math.round(Number(project.progress) || 0)}% complete →</span>
+    </button>
+  `).join('');
+
+  content.innerHTML = `
+    <div class="view-title"><div><div class="eyebrow">CLIENT PROFILE</div><h1>${escapeReportHtml(clientName)}</h1><p>Client information and all connected projects.</p></div><button class="button button-ghost" data-view-link="clients">← Back to clients</button></div>
+    <div class="client-detail-grid">
+      <section class="panel client-contact-panel">
+        <div class="avatar avatar-dark">${escapeReportHtml(initials)}</div>
+        <h2>${escapeReportHtml(clientName)}</h2>
+        <p>${escapeReportHtml(locations.join(' · ') || 'Location not recorded')}</p>
+        <p>${escapeReportHtml(phone || 'Phone not recorded')}</p>
+        <p>${escapeReportHtml(client.clientEmail || 'Email not recorded')}</p>
+        <div class="client-contact-actions">
+          ${phone ? `<a class="button button-ghost" href="tel:${escapeReportHtml(phone.replace(/[^\d+]/g, ''))}">Call client</a>` : ''}
+          ${whatsappNumber ? `<a class="button button-primary" target="_blank" rel="noopener" href="https://wa.me/${escapeReportHtml(whatsappNumber)}">WhatsApp</a>` : ''}
+        </div>
+      </section>
+      <section class="panel client-projects-panel">
+        <div class="panel-header"><div><h2>Projects for ${escapeReportHtml(clientName)}</h2><p>${clientProjects.length} linked ${clientProjects.length === 1 ? 'project' : 'projects'}</p></div><button class="button button-primary" type="button" data-client-add-project="${escapeReportHtml(clientName)}">＋ Add new project</button></div>
+        <div class="client-summary-metrics"><div><span>Total contract value</span><strong>${money(totalValue)}</strong></div><div><span>Outstanding balance</span><strong>${money(outstanding)}</strong></div><div><span>Active projects</span><strong>${clientProjects.filter(project => project.status !== 'Complete').length}</strong></div></div>
+        <div class="client-project-list">${projectRows}</div>
+      </section>
+    </div>
+  `;
+}
+
 const defaultActivities = ['Foundation block work', 'Column construction', 'Roofing', 'Plastering'];
-const defaultMaterials = ['Cement', 'Sand', 'Blocks', '2×4 lumber', 'Roofing sheets', 'Nails'];
-const siteIssueOptions = ['Material shortages', 'Weather delays', 'Equipment problems', 'Design changes', 'Client instructions'];
 
 function localDateString(date = new Date()) {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -405,28 +694,17 @@ function localDateString(date = new Date()) {
 }
 
 function workActivityRow(activity = '') {
-  return `<tr data-work-activity-row><td><input name="activity" value="${activity}" aria-label="Work activity" /></td><td><input name="activityLocation" value="Building A" aria-label="Work location" /></td><td><input name="plannedQty" type="number" min="0" step="0.01" placeholder="0" aria-label="Planned quantity" /></td><td><input name="completedQty" type="number" min="0" step="0.01" placeholder="0" aria-label="Completed quantity" /></td><td><input name="activityUnit" placeholder="e.g. ft², pcs" aria-label="Unit" /></td><td><output data-percent-complete>0%</output></td><td><button class="dpr-remove-row" type="button" aria-label="Remove activity">×</button></td></tr>`;
+  return `<tr data-work-activity-row><td><input name="activity" value="${escapeReportHtml(activity)}" aria-label="Work area" placeholder="e.g. Foundation" /></td><td><div class="dpr-activity-progress"><input name="activityPercent" type="number" min="0" max="100" step="1" value="0" aria-label="Work area progress percentage" /><span>%</span></div></td><td><output data-activity-status>Not started</output></td><td><button class="dpr-remove-row" type="button" aria-label="Remove work area">×</button></td></tr>`;
 }
 
-function materialRow(material) {
-  return `<tr data-material-row><td><input name="material" value="${material}" aria-label="Material" /></td><td><input name="openingQty" type="number" min="0" step="0.01" value="0" aria-label="Opening quantity" /></td><td><input name="receivedQty" type="number" min="0" step="0.01" value="0" aria-label="Quantity received" /></td><td><input name="usedQty" type="number" min="0" step="0.01" value="0" aria-label="Quantity used" /></td><td><output data-material-balance>0</output></td></tr>`;
-}
-
-function expenseRow() {
-  return '<tr data-expense-row><td><input name="expenseDescription" placeholder="Transport, equipment..." aria-label="Expense description" /></td><td><input name="expenseAmount" type="number" min="0" step="0.01" value="0" aria-label="Expense amount" /></td><td><button class="dpr-remove-row" type="button" aria-label="Remove expense">×</button></td></tr>';
-}
-
-function renderSavedReports(project) {
-  const reports = getProjectReports(project);
-  if (!reports.length) return '<div class="empty-state">No daily progress reports recorded yet.</div>';
-  return reports.slice().reverse().map(report => `
-    <article class="dpr-history-item">
-      <div class="dpr-history-heading"><div><strong>${report.reportNo || 'Daily report'}</strong><span>${new Date(`${report.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></div><span class="progress-badge">${report.percent}%</span></div>
-      <p>${report.completedWork || report.summary || 'Daily work update recorded.'}</p>
-      <div class="dpr-history-meta">${report.totalWorkers || 0} workers · ${report.activities?.length || 0} work activities · ${report.photos?.length || 0} photos${report.expenses?.length ? ` · ${money(report.expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0))} expenses` : ''}</div>
-      ${report.photos?.length ? `<div class="dpr-history-photos">${report.photos.map(photo => photo.dataUrl ? `<figure><img src="${photo.dataUrl}" alt="${photo.caption || photo.name}"><figcaption>${photo.caption || photo.name}</figcaption></figure>` : `<span>${photo.caption || photo.name}</span>`).join('')}</div>` : ''}
-    </article>
-  `).join('');
+function escapeReportHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[character]);
 }
 
 function openProject(id) {
@@ -434,86 +712,139 @@ function openProject(id) {
   if (!project) return;
   project.progressReports = Array.isArray(project.progressReports) ? project.progressReports : [];
   project.progress = Number(project.progress) || getProjectReports(project).reduce((max, report) => Math.max(max, report.percent), 0);
-  const reportNumber = `DPR-${project.id}-${String(getProjectReports(project).filter(report => report.reportNo).length + 1).padStart(3, '0')}`;
+  let reportProject = project;
+  const makeReportNumber = target => `DPR-${target.id}-${String(getProjectReports(target).filter(report => report.reportNo).length + 1).padStart(3, '0')}`;
+  const reportNumber = makeReportNumber(reportProject);
   const paidPercent = Math.round((project.paid / project.amount) * 100) || 0;
+  const paymentDue = Boolean(project.nextPaymentDate && project.nextPaymentDate <= localDateString() && Number(project.amount) > (Number(project.paid) || 0));
+  const remainingBalance = Math.max(0, Number(project.amount) - (Number(project.paid) || 0));
+  const paymentReminderText = `Hello ${project.client}, a scheduled payment of ${money(project.nextPaymentAmount)} for ${project.name} is due today. Remaining project balance: ${money(remainingBalance)}.`;
+  const paymentWhatsApp = (project.whatsapp || project.clientPhone || '').replace(/\D/g, '');
+  const paymentEmail = project.clientEmail || '';
+  const paymentScheduleNotice = project.nextPaymentDate && Number(project.amount) > (Number(project.paid) || 0)
+    ? `<section class="panel project-payment-notice${paymentDue ? ' project-payment-due' : ''}" role="${paymentDue ? 'alert' : 'status'}">
+        <div><div class="eyebrow">${paymentDue ? 'PAYMENT DUE' : 'UPCOMING PAYMENT'}</div><h2>${paymentDue ? 'Scheduled payment is due' : 'Next payment scheduled'}</h2><p>${money(project.nextPaymentAmount)} due ${new Date(`${project.nextPaymentDate}T00:00:00`).toLocaleDateString()} · Remaining balance ${money(remainingBalance)}.</p></div>
+        ${paymentDue ? `<div class="project-payment-notice-actions"><button class="button button-primary" type="button" data-record-payment="${escapeReportHtml(project.id)}">Record payment</button>${paymentWhatsApp ? `<a class="button button-ghost" target="_blank" rel="noopener" href="https://wa.me/${paymentWhatsApp}?text=${encodeURIComponent(paymentReminderText)}">Notify client on WhatsApp</a>` : ''}${paymentEmail ? `<a class="button button-ghost" href="mailto:${encodeURIComponent(paymentEmail)}?subject=${encodeURIComponent(`Payment due: ${project.name}`)}&body=${encodeURIComponent(paymentReminderText)}">Notify client by email</a>` : ''}</div>` : ''}
+      </section>`
+    : '';
 
   content.innerHTML = `
     <div class="view-title"><div><div class="eyebrow">${project.id} · ${project.type.toUpperCase()}</div><h1>${project.name}</h1><p>${project.location} · Client: ${project.client}</p></div><button class="button button-ghost" data-view-link="projects">← Back to projects</button></div>
-    <div class="dashboard-grid"><div class="metric"><div class="metric-label">Contract value</div><strong>${money(project.amount)}</strong><div class="metric-foot">Approved contract</div></div><div class="metric metric-orange"><div class="metric-label">Balance due</div><strong>${money(project.amount - project.paid)}</strong><div class="metric-foot">${paidPercent}% of contract paid</div></div><div class="metric"><div class="metric-label">Construction progress</div><strong data-project-progress>${project.progress}%</strong><div class="metric-foot">Last updated today</div></div><div class="metric metric-yellow"><div class="metric-label">Connected files</div><strong>18</strong><div class="metric-foot">Plans, receipts & photos</div></div></div>
-    <div class="project-progress-stack"><section class="panel dpr-panel">
-      <div class="panel-header"><div><div class="eyebrow">FIELD REPORTING</div><h2>Daily Progress Report</h2><p>Project-linked daily record · ${reportNumber}</p></div><span class="status ${statusClass(project.status)}" data-dpr-progress>${project.progress}%</span></div>
+    <div class="dashboard-grid"><div class="metric"><div class="metric-label">Contract value</div><strong>${money(project.amount)}</strong><div class="metric-foot">Approved contract</div></div><div class="metric metric-orange"><div class="metric-label">Balance due</div><strong>${money(project.amount - project.paid)}</strong><div class="metric-foot">${paidPercent}% of contract paid</div></div><div class="metric"><button class="metric-progress-trigger" type="button" aria-expanded="false" aria-controls="project-progress-stack"><span class="metric-label">Construction progress</span><strong data-project-progress>${project.progress}%</strong><span class="metric-foot">Click to view progress reports</span></button></div><div class="metric metric-yellow"><div class="metric-label">Connected files</div><strong>18</strong><div class="metric-foot">Plans, receipts & photos</div></div></div>
+    ${paymentScheduleNotice}
+    <div class="project-progress-stack" id="project-progress-stack" hidden><section class="panel dpr-panel">
+      <div class="panel-header"><div><div class="eyebrow">FIELD REPORTING</div><h2>Daily Progress Report</h2><p>Project-linked daily record · <span data-report-heading-number>${reportNumber}</span></p></div><span class="status ${statusClass(reportProject.status)}" data-dpr-progress>${reportProject.progress}%</span></div>
       <form id="daily-progress-form" class="project-progress-form dpr-form" data-project-id="${project.id}">
         <input type="hidden" name="reportNo" value="${reportNumber}">
-        <section class="dpr-section"><div class="dpr-section-heading"><span>01</span><div><h3>Project information</h3><p>Linked to this project automatically.</p></div></div>
-          <div class="dpr-fields dpr-project-fields"><label>Company<input value="Smart Construction Hub" readonly></label><label>Project name<input value="${project.name}" readonly></label><label>Client name<input value="${project.client}" readonly></label><label>Project location<input value="${project.location}" readonly></label><label>Project manager / site supervisor<input name="supervisor" placeholder="Name" /></label><label>Report number<input value="${reportNumber}" readonly></label><label>Date<input name="reportDate" type="date" required></label><label>Weather conditions<select name="weather"><option value="">Select weather</option><option>Clear</option><option>Partly cloudy</option><option>Overcast</option><option>Rain</option><option>Windy</option><option>Hot</option></select></label><label>Working hours<input name="workingHours" type="number" min="0" max="24" step="0.25" placeholder="e.g. 8" /></label><label>Overall project completion (%)<input name="reportPercent" type="number" min="0" max="100" step="1" value="${project.progress}" required></label></div>
+        <section class="dpr-report-meta dpr-form-meta">
+          <label><span>Project</span><select name="projectId" required>${projects.map(item => `<option value="${item.id}"${item.id === reportProject.id ? ' selected' : ''}>${item.name} · ${item.id}</option>`).join('')}</select><small data-report-number>${reportNumber}</small></label>
+          <label><span>Client</span><input data-report-client value="${reportProject.client}" readonly></label>
+          <label><span>Location</span><input data-report-location value="${reportProject.location}" readonly></label>
+          <label><span>Report date</span><input name="reportDate" type="date" required></label>
+          <label><span>Client phone</span><input name="clientPhone" type="tel" value="${reportProject.clientPhone || ''}" placeholder="+231 77 000 0000"></label>
+          <label><span>Client WhatsApp</span><input name="whatsapp" type="tel" value="${reportProject.whatsapp || ''}" placeholder="+231 77 000 0000"></label>
+          <label><span>Client email</span><input name="clientEmail" type="email" value="${reportProject.clientEmail || ''}" placeholder="client@example.com"></label>
         </section>
-        <section class="dpr-section"><div class="dpr-section-heading"><span>02</span><div><h3>Workforce</h3><p>Record today's attendance by trade.</p></div><strong class="dpr-section-total">Total <output data-worker-total>0</output></strong></div>
-          <div class="dpr-table-scroll"><table class="dpr-table dpr-workforce-table"><thead><tr><th>Worker / trade</th><th>Number</th></tr></thead><tbody>${workforceTrades.map(trade => `<tr><td>${trade}</td><td><input data-workforce-trade="${trade}" type="number" min="0" step="1" value="0" aria-label="${trade} count"></td></tr>`).join('')}<tr class="dpr-total-row"><th>Total workers</th><td><output data-worker-total-row>0</output></td></tr></tbody></table></div>
+        <section class="dpr-report-progress dpr-form-progress">
+          <label><span>Overall project progress</span><div><input name="reportPercent" type="number" min="0" max="100" step="1" value="${reportProject.progress}" required><strong>%</strong></div></label>
+          <label><span>Status</span><select name="scheduleStatus"><option>On schedule</option><option>At risk</option><option>Delayed</option><option>Complete</option></select></label>
         </section>
-        <section class="dpr-section"><div class="dpr-section-heading"><span>03</span><div><h3>Work completed today</h3><p>Quantities and completion rates for today's activities.</p></div><button class="text-button" type="button" data-add-activity>＋ Add activity</button></div>
-          <label class="dpr-full-field">Daily work summary<textarea name="completedWork" rows="3" required placeholder="What was completed on site today?"></textarea></label>
-          <div class="dpr-table-scroll"><table class="dpr-table dpr-activity-table"><thead><tr><th>Work activity</th><th>Location</th><th>Planned qty</th><th>Completed qty</th><th>Unit</th><th>% complete</th><th></th></tr></thead><tbody data-activity-rows>${defaultActivities.map(workActivityRow).join('')}</tbody></table></div>
+        <section class="dpr-form-section">
+          <div class="dpr-form-section-heading"><h3>Work area progress</h3><button class="text-button" type="button" data-add-activity>＋ Add work area</button></div>
+          <div class="dpr-report-table-wrap"><table class="dpr-report-table dpr-form-table"><thead><tr><th>Work area</th><th>Progress</th><th>Status</th><th></th></tr></thead><tbody data-activity-rows>${defaultActivities.map(workActivityRow).join('')}</tbody></table></div>
         </section>
-        <section class="dpr-section"><div class="dpr-section-heading"><span>04</span><div><h3>Materials used</h3><p>Balances calculate from opening stock, receipts, and usage.</p></div></div>
-          <div class="dpr-table-scroll"><table class="dpr-table dpr-material-table"><thead><tr><th>Material</th><th>Opening qty</th><th>Received</th><th>Used</th><th>Balance</th></tr></thead><tbody data-material-rows>${defaultMaterials.map(materialRow).join('')}</tbody></table></div>
+        <div class="dpr-report-columns dpr-form-columns">
+          <section class="dpr-form-section"><label class="dpr-form-textarea"><span>Work completed / current activities</span><textarea name="completedWorkItems" rows="6" required placeholder="List the work completed and activities currently underway."></textarea></label></section>
+          <section class="dpr-form-section dpr-report-planned"><label class="dpr-form-textarea"><span>Next work planned</span><textarea name="tomorrowPlan" rows="6" placeholder="List the next work planned for the project."></textarea></label></section>
+        </div>
+        <section class="dpr-form-section dpr-form-photo-section">
+          <h3>Project photos</h3>
+          <label class="dpr-photo-picker">＋ Add project photos<input name="photos" type="file" accept="image/*" multiple></label><div class="dpr-photo-previews" data-photo-previews></div>
         </section>
-        <section class="dpr-section"><div class="dpr-section-heading"><span>05</span><div><h3>Site issues / delays</h3><p>Select anything that affected today's work.</p></div></div>
-          <div class="dpr-issue-list">${siteIssueOptions.map(issue => `<label><input type="checkbox" name="siteIssue" value="${issue}"><span>${issue}</span></label>`).join('')}</div>
-          <label class="dpr-full-field">Issue details<textarea name="issueDetails" rows="2" placeholder="Describe the impact, owner, or action required."></textarea></label>
-        </section>
-        <section class="dpr-section"><div class="dpr-section-heading"><span>06</span><div><h3>Site work status</h3><p>Capture the handoff state and any quality concerns.</p></div></div>
-          <div class="dpr-fields"><label>Before work<textarea name="beforeWork" rows="2" placeholder="Site condition before today's work."></textarea></label><label>Work in progress<textarea name="inProgressWork" rows="2" placeholder="Activities underway at end of shift."></textarea></label><label>Completed work<textarea name="completedWorkItems" rows="2" placeholder="Milestones completed today."></textarea></label><label>Important problem / defect<textarea name="defects" rows="2" placeholder="Defect, safety issue, or follow-up required."></textarea></label></div>
-        </section>
-        <section class="dpr-section"><div class="dpr-section-heading"><span>07</span><div><h3>Expenses</h3><p>Daily expenses recorded against this project.</p></div><button class="text-button" type="button" data-add-expense>＋ Add expense</button></div>
-          <div class="dpr-table-scroll"><table class="dpr-table dpr-expense-table"><thead><tr><th>Expense</th><th>Amount</th><th></th></tr></thead><tbody data-expense-rows>${expenseRow()}</tbody><tfoot><tr><th>Total expenses</th><td colspan="2"><output data-expense-total>${money(0)}</output></td></tr></tfoot></table></div>
-        </section>
-        <section class="dpr-section"><div class="dpr-section-heading"><span>08</span><div><h3>Site photos</h3><p>Add progress photos and a caption for each image.</p></div></div>
-          <label class="dpr-photo-picker">＋ Add site photos<input name="photos" type="file" accept="image/*" multiple></label><div class="dpr-photo-previews" data-photo-previews></div>
-        </section>
-        <section class="dpr-section"><div class="dpr-section-heading"><span>09</span><div><h3>Tomorrow's planned work</h3><p>Set the next shift's priorities.</p></div></div><label class="dpr-full-field"><textarea name="tomorrowPlan" rows="3" placeholder="For example: Continue block laying at Building A; complete remaining columns; prepare roof trusses."></textarea></label></section>
-        <section class="dpr-section"><div class="dpr-section-heading"><span>10</span><div><h3>Approval</h3><p>Typed names and dates are recorded with this report.</p></div></div><div class="dpr-approval-grid"><label>Prepared by · Site supervisor<input name="preparedBy" placeholder="Name / signature" /></label><label>Prepared date<input name="preparedDate" type="date" /></label><label>Checked by · Project manager<input name="checkedBy" placeholder="Name / signature" /></label><label>Checked date<input name="checkedDate" type="date" /></label><label>Approved by · Client / representative<input name="approvedBy" placeholder="Name / signature" /></label><label>Approval date<input name="approvedDate" type="date" /></label></div></section>
-        <div class="dpr-form-footer"><span>Project completion updates when this report is saved.</span><div class="project-progress-actions"><button class="button button-primary" type="submit">Save report <span>→</span></button><button class="button button-ghost project-share-progress" type="button">Save &amp; share with client</button></div></div>
+        <div class="dpr-report-columns dpr-form-columns dpr-form-bottom">
+          <section class="dpr-form-section"><label class="dpr-form-textarea"><span>Client update</span><textarea name="clientUpdate" rows="4" placeholder="Write the progress update to share with the client."></textarea></label></section>
+          <section class="dpr-form-section dpr-report-planned"><label class="dpr-form-textarea"><span>Issues / delays</span><textarea name="issueDetails" rows="4" placeholder="Describe any issues, delays, or write 'None'."></textarea></label></section>
+        </div>
+        <div class="dpr-form-footer"><span>Project completion updates when this report is saved. Sharing opens WhatsApp or email with the report ready to send.</span><div class="project-progress-actions"><button class="button button-primary" type="submit">Save report <span>→</span></button><button class="button button-ghost project-share-progress" type="button">Save &amp; share with client</button></div></div>
       </form>
-      <section class="dpr-history"><div class="panel-header"><div><h2>Report history</h2><p>Daily records saved for this project.</p></div><strong>${getProjectReports(project).length}</strong></div><div class="dpr-history-list">${renderSavedReports(project)}</div></section>
     </section></div>
   `;
+  window.appendProjectWorkers?.(project.id);
+
+  const progressTrigger = content.querySelector('.metric-progress-trigger');
+  const progressSection = document.getElementById('project-progress-stack');
+  progressTrigger.addEventListener('click', () => {
+    const isExpanded = progressTrigger.getAttribute('aria-expanded') === 'true';
+    progressTrigger.setAttribute('aria-expanded', String(!isExpanded));
+    progressSection.hidden = isExpanded;
+  });
 
   const form = document.getElementById('daily-progress-form');
   form.elements.reportDate.value = localDateString();
-  form.elements.preparedDate.value = localDateString();
   let photoFiles = [];
 
+  form.elements.projectId.addEventListener('change', () => {
+    const selectedProject = projects.find(item => item.id === form.elements.projectId.value);
+    if (!selectedProject) {
+      window.alert('Select a project from the existing project list.');
+      form.elements.projectId.value = reportProject.id;
+      return;
+    }
+
+    reportProject = selectedProject;
+    reportProject.progress = Number(reportProject.progress) || getProjectReports(reportProject).reduce((max, report) => Math.max(max, report.percent), 0);
+    form.elements.clientPhone.value = reportProject.clientPhone || '';
+    form.elements.whatsapp.value = reportProject.whatsapp || '';
+    form.elements.clientEmail.value = reportProject.clientEmail || '';
+    const selectedReportNumber = makeReportNumber(reportProject);
+    form.dataset.projectId = reportProject.id;
+    form.elements.reportNo.value = selectedReportNumber;
+    form.elements.reportPercent.value = reportProject.progress;
+    form.elements.scheduleStatus.value = reportProject.status === 'Complete' ? 'Complete' : 'On schedule';
+    form.querySelector('[data-report-client]').value = reportProject.client;
+    form.querySelector('[data-report-location]').value = reportProject.location;
+    form.querySelector('[data-report-number]').textContent = selectedReportNumber;
+    content.querySelector('[data-report-heading-number]').textContent = selectedReportNumber;
+    content.querySelector('[data-dpr-progress]').textContent = `${reportProject.progress}%`;
+    content.querySelector('[data-dpr-progress]').className = `status ${statusClass(reportProject.status)}`;
+  });
+
   const updateDerivedValues = () => {
-    const workerTotal = [...form.querySelectorAll('[data-workforce-trade]')].reduce((sum, input) => sum + (Number(input.value) || 0), 0);
-    form.querySelector('[data-worker-total]').textContent = workerTotal;
-    form.querySelector('[data-worker-total-row]').textContent = workerTotal;
     form.querySelectorAll('[data-work-activity-row]').forEach(row => {
-      const planned = Number(row.querySelector('[name="plannedQty"]').value) || 0;
-      const completed = Number(row.querySelector('[name="completedQty"]').value) || 0;
-      row.querySelector('[data-percent-complete]').textContent = `${planned > 0 ? Math.min(100, Math.round(completed / planned * 100)) : 0}%`;
+      const percent = Math.min(100, Math.max(0, Number(row.querySelector('[name="activityPercent"]').value) || 0));
+      row.querySelector('[data-activity-status]').textContent = percent >= 100 ? 'Completed' : percent > 0 ? 'In Progress' : 'Not started';
     });
-    form.querySelectorAll('[data-material-row]').forEach(row => {
-      const opening = Number(row.querySelector('[name="openingQty"]').value) || 0;
-      const received = Number(row.querySelector('[name="receivedQty"]').value) || 0;
-      const used = Number(row.querySelector('[name="usedQty"]').value) || 0;
-      row.querySelector('[data-material-balance]').textContent = (opening + received - used).toLocaleString('en-US');
-    });
-    const expenses = [...form.querySelectorAll('[name="expenseAmount"]')].reduce((sum, input) => sum + (Number(input.value) || 0), 0);
-    form.querySelector('[data-expense-total]').textContent = money(expenses);
   };
 
   form.addEventListener('input', updateDerivedValues);
   form.addEventListener('change', updateDerivedValues);
+  form.addEventListener('change', event => {
+    if (!['clientPhone', 'whatsapp', 'clientEmail'].includes(event.target.name)) return;
+    reportProject.clientPhone = form.elements.clientPhone.value.trim();
+    reportProject.whatsapp = form.elements.whatsapp.value.trim();
+    reportProject.clientEmail = form.elements.clientEmail.value.trim();
+    try {
+      persistProjectContacts();
+    } catch (error) {
+      console.error('Client contact details could not be saved.', error);
+      window.alert('Client contact details could not be saved in this browser. Check available storage and try again.');
+    }
+  });
   form.addEventListener('submit', event => {
     event.preventDefault();
-    saveProgressReport(form, project, photoFiles, false);
+    saveProgressReport(form, reportProject, photoFiles, false);
   });
-  form.querySelector('.project-share-progress').addEventListener('click', () => saveProgressReport(form, project, photoFiles, true));
+  form.querySelector('.project-share-progress').addEventListener('click', () => {
+    if (!form.reportValidity()) return;
+    const shareWindow = window.open('', '_blank');
+    if (!shareWindow) {
+      window.alert('Allow pop-ups for this site before saving and sharing the report.');
+      return;
+    }
+    saveProgressReport(form, reportProject, photoFiles, true, shareWindow);
+  });
   form.querySelector('[data-add-activity]').addEventListener('click', () => {
     form.querySelector('[data-activity-rows]').insertAdjacentHTML('beforeend', workActivityRow());
-  });
-  form.querySelector('[data-add-expense]').addEventListener('click', () => {
-    form.querySelector('[data-expense-rows]').insertAdjacentHTML('beforeend', expenseRow());
   });
   form.addEventListener('click', event => {
     const removeButton = event.target.closest('.dpr-remove-row');
@@ -534,71 +865,48 @@ function collectProgressReport(form, project, photos) {
   const formData = new FormData(form);
   const value = name => String(formData.get(name) || '').trim();
   const activities = [...form.querySelectorAll('[data-work-activity-row]')].map(row => {
-    const plannedQty = Number(row.querySelector('[name="plannedQty"]').value) || 0;
-    const completedQty = Number(row.querySelector('[name="completedQty"]').value) || 0;
+    const percentComplete = Math.min(100, Math.max(0, Number(row.querySelector('[name="activityPercent"]').value) || 0));
     return {
       activity: row.querySelector('[name="activity"]').value.trim(),
-      location: row.querySelector('[name="activityLocation"]').value.trim(),
-      plannedQty,
-      completedQty,
-      unit: row.querySelector('[name="activityUnit"]').value.trim(),
-      percentComplete: plannedQty > 0 ? Math.min(100, Math.round(completedQty / plannedQty * 100)) : 0
+      percentComplete,
+      status: percentComplete >= 100 ? 'Completed' : percentComplete > 0 ? 'In Progress' : 'Not started'
     };
   }).filter(activity => activity.activity);
-  const materials = [...form.querySelectorAll('[data-material-row]')].map(row => ({
-    material: row.querySelector('[name="material"]').value.trim(),
-    openingQty: Number(row.querySelector('[name="openingQty"]').value) || 0,
-    received: Number(row.querySelector('[name="receivedQty"]').value) || 0,
-    used: Number(row.querySelector('[name="usedQty"]').value) || 0,
-    balance: (Number(row.querySelector('[name="openingQty"]').value) || 0) + (Number(row.querySelector('[name="receivedQty"]').value) || 0) - (Number(row.querySelector('[name="usedQty"]').value) || 0)
-  })).filter(material => material.material);
-  const workforce = Object.fromEntries([...form.querySelectorAll('[data-workforce-trade]')].map(input => [input.dataset.workforceTrade, Number(input.value) || 0]));
-  const expenses = [...form.querySelectorAll('[data-expense-row]')].map(row => ({
-    description: row.querySelector('[name="expenseDescription"]').value.trim(),
-    amount: Number(row.querySelector('[name="expenseAmount"]').value) || 0
-  })).filter(expense => expense.description || expense.amount > 0);
   const photosWithCaptions = photos.map((photo, index) => ({
     file: photo.file,
     name: photo.file.name,
     caption: form.querySelector(`[data-photo-caption="${index}"]`)?.value.trim() || ''
   }));
-  const totalWorkers = Object.values(workforce).reduce((sum, count) => sum + count, 0);
+  const completedWorkItems = value('completedWorkItems');
+  const clientUpdate = value('clientUpdate');
 
   return {
     reportNo: value('reportNo'),
     date: value('reportDate'),
     percent: Math.min(100, Math.max(0, Number(value('reportPercent')))),
-    summary: value('completedWork'),
-    completedWork: value('completedWork'),
+    scheduleStatus: value('scheduleStatus'),
+    summary: clientUpdate || completedWorkItems,
+    completedWork: completedWorkItems,
+    clientUpdate,
+    completedWorkItems,
     company: 'Smart Construction Hub',
     projectId: project.id,
     projectName: project.name,
     client: project.client,
     location: project.location,
-    supervisor: value('supervisor'),
-    weather: value('weather'),
-    workingHours: value('workingHours'),
-    workforce,
-    totalWorkers,
+    supervisor: '',
+    totalWorkers: 0,
     activities,
-    materials,
-    issues: [...form.querySelectorAll('[name="siteIssue"]:checked')].map(input => input.value),
+    materials: [],
+    issues: value('issueDetails').split(/\r?\n/).map(issue => issue.trim()).filter(issue => issue && issue.toLowerCase() !== 'none'),
     issueDetails: value('issueDetails'),
-    beforeWork: value('beforeWork'),
-    inProgressWork: value('inProgressWork'),
-    completedWorkItems: value('completedWorkItems'),
-    defects: value('defects'),
-    expenses,
+    beforeWork: '',
+    inProgressWork: '',
+    defects: '',
+    expenses: [],
     tomorrowPlan: value('tomorrowPlan'),
     photos: photosWithCaptions,
-    approvals: {
-      preparedBy: value('preparedBy'),
-      preparedDate: value('preparedDate'),
-      checkedBy: value('checkedBy'),
-      checkedDate: value('checkedDate'),
-      approvedBy: value('approvedBy'),
-      approvedDate: value('approvedDate')
-    }
+    approvals: {}
   };
 }
 
@@ -628,18 +936,36 @@ function persistProjectProgressReports() {
   localStorage.setItem(progressStorageKey, JSON.stringify(savedReports));
 }
 
-async function saveProgressReport(form, project, photos, shouldShare) {
-  if (!form.reportValidity()) return;
-  const report = collectProgressReport(form, project, photos);
-  if (!report.completedWork) {
-    window.alert('Add a summary of work completed today before saving the report.');
-    form.elements.completedWork.focus();
+function persistProjectContacts() {
+  const savedContacts = Object.fromEntries(projects.map(project => [project.id, {
+    clientPhone: project.clientPhone || '',
+    whatsapp: project.whatsapp || '',
+    clientEmail: project.clientEmail || ''
+  }]));
+  localStorage.setItem(projectContactsStorageKey, JSON.stringify(savedContacts));
+}
+
+async function saveProgressReport(form, project, photos, shouldShare, shareWindow = null) {
+  if (!form.reportValidity()) {
+    shareWindow?.close();
     return;
   }
+  const report = collectProgressReport(form, project, photos);
+  if (!report.completedWork) {
+    shareWindow?.close();
+    window.alert('Add the work completed or currently underway before saving the report.');
+    form.elements.completedWorkItems.focus();
+    return;
+  }
+
+  project.clientPhone = form.elements.clientPhone.value.trim();
+  project.whatsapp = form.elements.whatsapp.value.trim();
+  project.clientEmail = form.elements.clientEmail.value.trim();
 
   try {
     report.photos = await Promise.all(report.photos.map(photo => resizeProgressPhoto(photo.file, photo.caption)));
   } catch (error) {
+    shareWindow?.close();
     window.alert(error.message);
     return;
   }
@@ -659,34 +985,90 @@ async function saveProgressReport(form, project, photos, shouldShare) {
     }
   }
 
+  try {
+    persistProjectContacts();
+  } catch (error) {
+    console.error('Client contact details could not be saved.', error);
+    window.alert('The report was saved, but the client contact details could not be stored in this browser.');
+  }
+
   openProject(project.id);
-  if (shouldShare) await shareProjectProgressWithClient(project.id, report);
+  if (shouldShare) await shareProjectProgressWithClient(project.id, report, shareWindow);
 }
 
 function setView(view) {
   activeView = view;
   document.querySelectorAll('.nav-item[data-view]').forEach(item => item.classList.toggle('active', item.dataset.view === view));
   document.getElementById('breadcrumb-title').textContent = view === 'overview' ? 'SCH Dashboard' : view.charAt(0).toUpperCase() + view.slice(1);
+  document.querySelector('#sidebar [data-view="projects"] b').textContent = projects.length;
 
   const views = {
     overview,
     activity: activityView,
     settings: settingsView,
     projects: projectsView,
-    clients: () => {
-      content.innerHTML = '<div class="view-title"><div><div class="eyebrow">RELATIONSHIPS</div><h1>Clients</h1><p>View clients and every project connected to them.</p></div></div><div class="cards-grid"><article class="client-card"><div class="avatar avatar-dark">JD</div><h3>John Doe</h3><p>East Legon, Accra</p><p>john.doe@example.com</p><div class="client-project"><strong>2 projects</strong><span>· $36,500 contract value</span></div></article><article class="client-card"><div class="avatar avatar-dark">AM</div><h3>Amara Mensah</h3><p>Cantonments, Accra</p><p>amara.mensah@example.com</p><div class="client-project"><strong>1 project</strong><span>· $12,600 contract value</span></div></article><article class="client-card"><div class="avatar avatar-dark">DK</div><h3>David Kimani</h3><p>Adenta, Accra</p><p>david.kimani@example.com</p><div class="client-project"><strong>1 project</strong><span>· $8,400 contract value</span></div></article><article class="client-card"><div class="avatar avatar-dark">SO</div><h3>Sarah Owusu</h3><p>Labone, Accra</p><p>sarah.owusu@example.com</p><div class="client-project"><strong>1 project</strong><span>· $18,900 contract value</span></div></article></div>';
-    },
+    clients: clientsView,
     estimates: () => {
-      content.innerHTML = '<div class="view-title"><div><div class="eyebrow">COST CONTROL</div><h1>Estimates</h1><p>Build accurate material estimates and keep approvals moving.</p></div></div><section class="panel view-table-panel"><table class="project-table full-table"><thead><tr><th>Estimate</th><th>Project & client</th><th>Date</th><th>Total</th><th>Status</th></tr></thead><tbody><tr><td><strong class="project-name">EST-018</strong></td><td><strong class="project-name">Willow Creek Residence</strong><span class="project-client">John Doe</span></td><td>Sep 08, 2026</td><td class="project-amount">$25,000</td><td><span class="status status-review">Pending approval</span></td></tr></tbody></table></section>';
+      content.innerHTML = `
+        <div class="view-title">
+          <div><div class="eyebrow">COST CONTROL</div><h1>Estimates</h1><p>Build estimates or upload a signed estimate PDF linked to its project and owner.</p></div>
+          <button class="button button-primary" type="button" data-open-estimate-upload>＋ Upload estimate PDF</button>
+        </div>
+        <section class="panel view-table-panel">
+          <div class="panel-header"><div><h2>Estimate records</h2><p>Uploaded PDF copies attached to projects.</p></div></div>
+          <div data-estimate-pdf-list></div>
+        </section>
+      `;
+      renderEstimatePdfList(content.querySelector('[data-estimate-pdf-list]'), 'No estimate PDFs uploaded yet. Use “Upload estimate PDF” to add a copy.');
     },
-    workers: () => {
-      content.innerHTML = '<div class="view-title"><div><div class="eyebrow">FIELD OPERATIONS</div><h1>Workers</h1><p>Keep worker contacts, skills, amounts, and payment conditions ready for project planning.</p></div></div><section class="panel empty-state"><div class="activity-icon" style="margin:0 auto 13px">◉</div><strong>No workers recorded yet.</strong><p>Connect this workspace area to your project records as your operations grow.</p></section>';
-    },
+    workers: () => workersView(),
     payments: () => {
-      content.innerHTML = '<div class="view-title"><div><div class="eyebrow">CASH FLOW</div><h1>Payments</h1><p>Track every payment against the right project and keep a receipt for the client.</p></div></div><section class="panel empty-state"><div class="activity-icon" style="margin:0 auto 13px">↗</div><strong>No payments recorded yet.</strong><p>Keep payment records here once your project invoices land.</p></section>';
+      const today = localDateString();
+      const pendingProjects = projects.filter(project => {
+        const balance = Number(project.amount) - (Number(project.paid) || 0);
+        return balance > 0 && (
+          project.nextPaymentDate
+            ? project.nextPaymentDate <= today
+            : project.status === 'Pending payment'
+        );
+      });
+      content.innerHTML = `
+        <div class="view-title">
+          <div><div class="eyebrow">CASH FLOW</div><h1>Payments</h1><p>Track every payment against the right project and keep a receipt for the client.</p></div>
+        </div>
+        ${pendingProjects.length ? `
+          <section class="panel view-table-panel">
+            <div class="panel-header"><div><h2>Waiting for payment</h2><p>First payments awaiting payment or scheduled payments due today.</p></div><strong>${pendingProjects.length}</strong></div>
+            <table class="project-table full-table">
+              <thead><tr><th>Project & client</th><th>Location</th><th>Status</th><th>Scheduled payment</th><th>Contract value</th><th>Paid</th><th>Balance due</th><th>Action</th></tr></thead>
+              <tbody>${pendingProjects.map(project => {
+                const amount = Number(project.amount) || 0;
+                const paid = Number(project.paid) || 0;
+                return `<tr data-project="${escapeReportHtml(project.id)}">
+                  <td><strong class="project-name">${escapeReportHtml(project.name)}</strong><span class="project-client">${escapeReportHtml(project.client)}</span></td>
+                  <td>${escapeReportHtml(project.location)}</td>
+                  <td><span class="status status-review">${project.nextPaymentDate ? 'Payment due' : 'Pending payment'}</span></td>
+                  <td class="project-amount">${project.nextPaymentAmount ? money(project.nextPaymentAmount) : '—'}</td>
+                  <td class="project-amount">${money(amount)}</td>
+                  <td class="project-amount">${money(paid)}</td>
+                  <td class="project-amount">${money(Math.max(0, amount - paid))}</td>
+                  <td><button class="button button-primary" type="button" data-record-payment="${escapeReportHtml(project.id)}">Record payment</button></td>
+                </tr>`;
+              }).join('')}</tbody>
+            </table>
+          </section>
+        ` : '<section class="panel empty-state"><div class="activity-icon" style="margin:0 auto 13px">↗</div><strong>No projects are due for payment today.</strong><p>New projects appear here until the first payment is recorded. Scheduled projects return on their payment due date.</p></section>'}
+      `;
     },
     documents: () => {
-      content.innerHTML = '<div class="view-title"><div><div class="eyebrow">PROJECT RECORDS</div><h1>Documents</h1><p>Contracts, plans, permits and receipts in one place.</p></div></div><section class="panel empty-state"><div class="activity-icon" style="margin:0 auto 13px">□</div><strong>Document library ready.</strong><p>Connect this workspace area to your project records as your operations grow.</p></section>';
+      content.innerHTML = `
+        <div class="view-title"><div><div class="eyebrow">PROJECT RECORDS</div><h1>Documents</h1><p>Find estimate PDFs together with the project and owner details they belong to.</p></div></div>
+        <section class="panel view-table-panel">
+          <div class="panel-header"><div><h2>Uploaded estimate PDFs</h2><p>Estimate documents uploaded for projects in this workspace.</p></div></div>
+          <div data-estimate-pdf-list></div>
+        </section>
+      `;
+      renderEstimatePdfList(content.querySelector('[data-estimate-pdf-list]'), 'No estimate PDFs have been uploaded.');
     }
   };
 
@@ -694,6 +1076,115 @@ function setView(view) {
 }
 
 document.addEventListener('click', event => {
+  const uploadEstimateButton = event.target.closest('[data-open-estimate-upload]');
+  if (uploadEstimateButton) {
+    const form = document.getElementById('estimate-pdf-form');
+    form.reset();
+    form.elements.projectId.innerHTML = '<option value="">Choose a project…</option>' + projects.map(project =>
+      `<option value="${escapeReportHtml(project.id)}">${escapeReportHtml(project.name)} · ${escapeReportHtml(project.id)}</option>`
+    ).join('');
+    document.getElementById('estimate-pdf-modal-backdrop').hidden = false;
+    form.elements.projectId.focus();
+    return;
+  }
+
+  if (event.target.closest('#estimate-pdf-modal-close') ||
+      event.target.closest('#estimate-pdf-cancel') ||
+      event.target.id === 'estimate-pdf-modal-backdrop') {
+    document.getElementById('estimate-pdf-modal-backdrop').hidden = true;
+    return;
+  }
+
+  if (event.target.closest('#estimate-pdf-viewer-close') ||
+      event.target.id === 'estimate-pdf-viewer-backdrop') {
+    closeEstimatePdfViewer();
+    return;
+  }
+
+  const openEstimatePdfButton = event.target.closest('[data-open-estimate-pdf]');
+  if (openEstimatePdfButton) {
+    getEstimatePdf(openEstimatePdfButton.dataset.openEstimatePdf).then(documentRecord => {
+      if (!documentRecord?.file) {
+        window.alert('This estimate PDF could not be found in browser storage.');
+        return;
+      }
+      closeEstimatePdfViewer();
+      activeEstimatePdfUrl = URL.createObjectURL(documentRecord.file);
+      document.getElementById('estimate-pdf-viewer-title').textContent = documentRecord.fileName;
+      document.getElementById('estimate-pdf-viewer-frame').src = activeEstimatePdfUrl;
+      document.getElementById('estimate-pdf-viewer-backdrop').hidden = false;
+      document.getElementById('estimate-pdf-viewer-close').focus();
+    }).catch(error => {
+      console.error('Estimate PDF could not be opened.', error);
+      window.alert('Estimate PDF could not be opened. Please try again.');
+    });
+    return;
+  }
+
+  const addWorkerButton = event.target.closest('[data-add-worker-to-project]');
+  if (addWorkerButton) {
+    const project = projects.find(item => item.id === addWorkerButton.dataset.addWorkerToProject);
+    const form = document.getElementById('worker-form');
+    if (!project || !form) {
+      window.alert('The selected project could not be loaded for adding a worker.');
+      return;
+    }
+
+    form.reset();
+    form.elements.projectId.replaceChildren();
+    projects.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = `${item.name} · ${item.client}`;
+      form.elements.projectId.appendChild(option);
+    });
+    form.elements.projectId.value = project.id;
+    document.getElementById('worker-modal-title').textContent = `Add worker to ${project.name}`;
+    document.getElementById('worker-modal-backdrop').hidden = false;
+    form.elements.workerNumber.focus();
+    return;
+  }
+
+  const addProjectForClient = event.target.closest('[data-client-add-project]');
+  if (addProjectForClient) {
+    projectCreationClientName = addProjectForClient.dataset.clientAddProject;
+    const clientProjects = getClientProjects(projectCreationClientName);
+    const client = clientProjects.find(project => project.clientPhone || project.whatsapp || project.clientEmail) || clientProjects[0];
+    const form = document.getElementById('project-form');
+    form.reset();
+    form.elements.client.value = projectCreationClientName;
+    form.elements.clientPhone.value = client.clientPhone || '';
+    form.elements.whatsapp.value = client.whatsapp || '';
+    form.elements.clientEmail.value = client.clientEmail || '';
+    form.elements.type.required = false;
+    document.getElementById('custom-work-type-field').hidden = true;
+    document.getElementById('modal-backdrop').hidden = false;
+    form.elements.name.focus();
+    return;
+  }
+
+  if (event.target.closest('#add-project-button')) {
+    projectCreationClientName = '';
+    const form = document.getElementById('project-form');
+    form.reset();
+    form.elements.type.required = false;
+    document.getElementById('custom-work-type-field').hidden = true;
+    document.getElementById('modal-backdrop').hidden = false;
+    form.elements.name.focus();
+    return;
+  }
+
+  if (event.target.closest('#modal-close') || event.target.closest('#form-cancel') || event.target.id === 'modal-backdrop') {
+    projectCreationClientName = '';
+    document.getElementById('modal-backdrop').hidden = true;
+    return;
+  }
+
+  if (event.target.closest('#worker-modal-close') || event.target.closest('#worker-form-cancel') || event.target.id === 'worker-modal-backdrop') {
+    document.getElementById('worker-modal-backdrop').hidden = true;
+    return;
+  }
+
   const mobileMenuToggle = event.target.closest('#mobile-menu');
   if (mobileMenuToggle) {
     setMobileNavigationOpen(mobileMenuToggle.getAttribute('aria-expanded') !== 'true');
@@ -750,9 +1241,252 @@ document.addEventListener('click', event => {
     return;
   }
 
+  const clientButton = event.target.closest('[data-client-name]');
+  if (clientButton) {
+    openClientDetail(clientButton.dataset.clientName);
+    return;
+  }
+
+  const clientProjectButton = event.target.closest('[data-client-project]');
+  if (clientProjectButton) {
+    openProject(clientProjectButton.dataset.clientProject);
+    return;
+  }
+
   const projectRow = event.target.closest('tr[data-project]');
+  const recordPaymentButton = event.target.closest('[data-record-payment]');
+  if (recordPaymentButton) {
+    openPaymentModal(recordPaymentButton.dataset.recordPayment);
+    return;
+  }
+
   if (projectRow) {
     openProject(projectRow.dataset.project);
+  }
+
+  const workerRow = event.target.closest('tr[data-worker-number]');
+  if (workerRow && activeView === 'workers') {
+    window.openAssignedWorkerDetail?.(workerRow.dataset.workerNumber);
+  }
+});
+
+function workersView() {
+  const workers = projectWorkers;
+  content.innerHTML = `
+    <div class="view-title">
+      <div><div class="eyebrow">FIELD OPERATIONS</div><h1>Workers</h1><p>Review workers and the projects they are assigned to.</p></div>
+    </div>
+    ${workers.length ? `
+      <section class="panel view-table-panel">
+        <div class="panel-header"><div><h2>Assigned workers</h2><p>Workers added to projects in this workspace.</p></div><strong>${workers.length}</strong></div>
+        <table class="project-table full-table">
+          <thead><tr><th>Worker</th><th>Phone</th><th>Skill / position</th><th>Assigned projects</th><th>Status</th></tr></thead>
+          <tbody>${workers.map(worker => {
+            const assignments = projects.flatMap(project => (project.workerAssignments || [])
+              .filter(assignment => (assignment.Worker || assignment.worker)?.workerNumber === worker.workerNumber)
+              .map(assignment => ({ project, assignment })));
+            const projectLabels = assignments.map(({ project, assignment }) =>
+              `${project.name}${assignment.Position || assignment.position ? ` · ${assignment.Position || assignment.position}` : ''}`
+            );
+            return `<tr id="worker-${escapeReportHtml(worker.workerNumber)}" data-worker-number="${escapeReportHtml(worker.workerNumber)}">
+              <td><strong class="project-name">${escapeReportHtml(worker.fullName)}</strong><span class="project-client">${escapeReportHtml(worker.workerNumber)}</span></td>
+              <td>${escapeReportHtml(worker.phone || 'Not recorded')}</td>
+              <td>${escapeReportHtml(worker.skill || 'Not specified')}</td>
+              <td>${projectLabels.length ? projectLabels.map(escapeReportHtml).join('<br>') : 'No project assigned'}</td>
+              <td><span class="status ${worker.status === 'Inactive' ? 'status-review' : 'status-progress'}">${escapeReportHtml(worker.status || 'Active')}</span></td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </section>
+    ` : '<section class="panel empty-state"><div class="activity-icon" style="margin:0 auto 13px">◉</div><strong>No workers assigned yet.</strong><p>Open a project and select “Add worker” to assign someone. Assigned workers will be listed here.</p></section>'}
+  `;
+}
+
+document.getElementById('worker-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  if (!form.reportValidity()) return;
+
+  const project = projects.find(item => item.id === form.elements.projectId.value);
+  if (!project) {
+    window.alert('Select a valid project for this worker.');
+    return;
+  }
+
+  const workerNumber = form.elements.workerNumber.value.trim();
+  if (projects.some(item => (item.workerAssignments || []).some(assignment =>
+    (assignment.Worker?.workerNumber || assignment.worker?.workerNumber) === workerNumber
+  ))) {
+    window.alert('A worker with this ID is already assigned to a project.');
+    form.elements.workerNumber.focus();
+    return;
+  }
+
+  const worker = {
+    workerNumber,
+    fullName: form.elements.fullName.value.trim(),
+    phone: form.elements.phone.value.trim(),
+    address: form.elements.address.value.trim(),
+    skill: form.elements.skill.value.trim(),
+    employmentType: form.elements.employmentType.value,
+    rate: Number(form.elements.workerAmount.value),
+    ratePeriod: form.elements.paymentCondition.value,
+    dateHired: form.elements.dateHired.value,
+    emergencyContactName: form.elements.emergencyContactName.value.trim(),
+    emergencyContactPhone: form.elements.emergencyContactPhone.value.trim(),
+    idDocumentType: form.elements.idDocumentType.value.trim(),
+    idDocumentNumber: form.elements.idDocumentNumber.value.trim(),
+    attendanceStatus: form.elements.attendanceStatus.value,
+    attendanceNotes: form.elements.attendanceNotes.value.trim(),
+    workHours: Number(form.elements.workHours.value) || 0,
+    amountOwed: Number(form.elements.amountOwed.value) || 0,
+    status: form.elements.status.value,
+    projects: [{ project: { name: project.name }, position: form.elements.position.value.trim() || 'Position not recorded' }]
+  };
+  const assignment = {
+    Worker: worker,
+    Position: form.elements.position.value.trim() || 'Position not recorded',
+    AmountPaid: 0,
+    AttendanceNotes: worker.attendanceNotes
+  };
+  const previousAssignments = project.workerAssignments || [];
+  const previousWorkers = projectWorkers;
+  project.workerAssignments = [...previousAssignments, assignment];
+  projectWorkers = projectWorkers.some(item => item.workerNumber === worker.workerNumber)
+    ? projectWorkers.map(item => item.workerNumber === worker.workerNumber ? worker : item)
+    : [...projectWorkers, worker];
+
+  try {
+    persistProjectWorkerAssignments();
+    persistProjectWorkers();
+  } catch (error) {
+    project.workerAssignments = previousAssignments;
+    projectWorkers = previousWorkers;
+    console.error('Worker assignment could not be saved in this browser.', error);
+    window.alert('The worker could not be added to this project. Check available browser storage and try again.');
+    return;
+  }
+
+  document.getElementById('worker-modal-backdrop').hidden = true;
+  form.reset();
+  window.appendProjectWorkers?.(project.id);
+});
+
+function closeEstimatePdfViewer() {
+  const viewer = document.getElementById('estimate-pdf-viewer-backdrop');
+  document.getElementById('estimate-pdf-viewer-frame').removeAttribute('src');
+  viewer.hidden = true;
+  if (activeEstimatePdfUrl) {
+    URL.revokeObjectURL(activeEstimatePdfUrl);
+    activeEstimatePdfUrl = '';
+  }
+}
+
+const estimatePdfForm = document.getElementById('estimate-pdf-form');
+estimatePdfForm.elements.projectId.addEventListener('change', () => {
+  const project = projects.find(item => item.id === estimatePdfForm.elements.projectId.value);
+  estimatePdfForm.elements.owner.value = project?.client || '';
+  estimatePdfForm.elements.location.value = project?.location || '';
+});
+estimatePdfForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!estimatePdfForm.reportValidity()) return;
+  const project = projects.find(item => item.id === estimatePdfForm.elements.projectId.value);
+  const file = estimatePdfForm.elements.file.files[0];
+  if (!project || !file) {
+    window.alert('Select a project and choose an estimate PDF.');
+    return;
+  }
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+    window.alert('Only PDF files can be uploaded as estimate documents.');
+    estimatePdfForm.elements.file.value = '';
+    return;
+  }
+  const documentRecord = {
+    id: globalThis.crypto?.randomUUID?.() || `estimate-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    projectId: project.id,
+    projectName: project.name,
+    owner: project.client,
+    location: project.location,
+    fileName: file.name,
+    uploadedAt: new Date().toISOString(),
+    file
+  };
+  const submitButton = estimatePdfForm.querySelector('[type="submit"]');
+  submitButton.disabled = true;
+  try {
+    await saveEstimatePdf(documentRecord);
+    estimatePdfForm.reset();
+    document.getElementById('estimate-pdf-modal-backdrop').hidden = true;
+    if (activeView === 'estimates' || activeView === 'documents') setView(activeView);
+  } catch (error) {
+    console.error('Estimate PDF could not be uploaded.', error);
+    window.alert('The estimate PDF could not be saved in this browser. Check available storage and try again.');
+  } finally {
+    submitButton.disabled = false;
+  }
+});
+
+document.getElementById('project-form').addEventListener('change', event => {
+  if (event.target.name !== 'typeChoice') return;
+  const customTypeField = document.getElementById('custom-work-type-field');
+  const customTypeInput = event.currentTarget.elements.type;
+  const needsCustomType = event.target.value === 'Other';
+  customTypeField.hidden = !needsCustomType;
+  customTypeInput.required = needsCustomType;
+  if (needsCustomType) customTypeInput.focus();
+});
+
+document.getElementById('project-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  if (!form.reportValidity()) return;
+
+  const data = new FormData(form);
+  const projectType = data.get('typeChoice') === 'Other' ? String(data.get('type') || '').trim() : String(data.get('typeChoice'));
+  const nextProjectNumber = projects.reduce((highest, project) => {
+    const match = /^PRJ-(\d+)$/.exec(project.id);
+    return match ? Math.max(highest, Number(match[1])) : highest;
+  }, 0) + 1;
+  const project = {
+    id: `PRJ-${String(nextProjectNumber).padStart(3, '0')}`,
+    name: String(data.get('name')).trim(),
+    client: String(data.get('client')).trim(),
+    type: projectType,
+    location: String(data.get('location')).trim(),
+    clientPhone: String(data.get('clientPhone') || '').trim(),
+    whatsapp: String(data.get('whatsapp') || '').trim(),
+    clientEmail: String(data.get('clientEmail') || '').trim(),
+    status: 'Pending payment',
+    amount: Number(data.get('amount')),
+    paid: 0,
+    progress: 0,
+    startDate: String(data.get('startDate')),
+    expectedCompletionDate: String(data.get('endDate')),
+    progressReports: []
+  };
+  const savedProjects = projects.filter(item => !builtInProjectIds.has(item.id));
+
+  try {
+    localStorage.setItem(createdProjectsStorageKey, JSON.stringify([...savedProjects, project]));
+  } catch (error) {
+    console.error('New project could not be saved in this browser.', error);
+    window.alert('The project could not be saved in this browser. Check available storage and try again.');
+    return;
+  }
+
+  projects.push(project);
+  const returnToClient = projectCreationClientName;
+  projectCreationClientName = '';
+  document.getElementById('modal-backdrop').hidden = true;
+  form.reset();
+  document.getElementById('custom-work-type-field').hidden = true;
+  form.elements.type.required = false;
+  if (returnToClient) {
+    setView('clients');
+    openClientDetail(returnToClient);
+  } else {
+    setView('projects');
   }
 });
 

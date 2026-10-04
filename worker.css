@@ -1,5 +1,7 @@
-.worker-modal{max-height:calc(100vh - 32px);overflow:auto}
-.worker-modal .form-grid{align-items:start}
+.worker-modal{display:flex;flex-direction:column;max-height:calc(100dvh - 24px);overflow:hidden}
+.worker-modal #worker-form{display:flex;flex:1;flex-direction:column;min-height:0}
+.worker-modal .form-grid{flex:1;min-height:0;overflow-y:auto;align-content:start;grid-template-columns:repeat(2,minmax(0,1fr));padding:0 8px 8px 0;overscroll-behavior:contain}
+.worker-modal .form-actions{flex-shrink:0;margin-top:10px;padding:14px 0 0;background:#fff}
 .worker-modal .form-grid label{min-width:0}
 .worker-modal .form-grid input,.worker-modal .form-grid select,.worker-modal .form-grid textarea{width:100%;min-width:0}
 .worker-modal .form-wide{grid-column:1/-1}

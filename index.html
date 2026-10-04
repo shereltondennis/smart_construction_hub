@@ -29,7 +29,7 @@
       <div class="workspace-label">WORKSPACE <span class="status-dot"></span></div>
       <nav class="nav-list" aria-label="Primary navigation">
         <button class="nav-item active" data-view="overview"><span class="nav-icon">▦</span>SCH Dashboard</button>
-        <button class="nav-item" data-view="projects"><span class="nav-icon">▱</span>Projects <b>12</b></button>
+        <button class="nav-item" data-view="projects"><span class="nav-icon">▱</span>Projects <b>4</b></button>
         <button class="nav-item" data-view="clients"><span class="nav-icon">◉</span>Clients</button>
         <button class="nav-item" data-view="estimates"><span class="nav-icon">≡</span>Estimates <b class="alert-count">5</b></button>
         <button class="nav-item" data-view="workers"><span class="nav-icon">◉</span>Workers</button>
@@ -39,7 +39,7 @@
       <div class="sidebar-bottom">
         <div class="sync-card"><div class="sync-icon">!</div><div><strong>Demo data only</strong><span>Not connected to a database</span></div></div>
         <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span>Settings</button>
-        <div class="profile"><div class="avatar avatar-dark" id="profile-avatar">AM</div><div><strong id="profile-name">Alex Morgan</strong><span id="profile-role">Administrator</span></div></div>
+        <div class="profile"><div class="avatar avatar-dark" id="profile-avatar">SD</div><div><strong id="profile-name">Sherelton Dennis</strong><span id="profile-role">Administrator</span></div></div>
       </div>
     </aside>
 
@@ -51,7 +51,7 @@
           <button class="icon-button" aria-label="Search" id="focus-search">⌕</button>
           <button class="icon-button notification" aria-label="Notifications">♢<span></span></button>
           <div class="top-divider"></div>
-          <div class="avatar avatar-orange">AM</div>
+          <div class="avatar avatar-orange">SD</div>
         </div>
       </header>
 
@@ -68,8 +68,11 @@
       <form id="project-form">
         <div class="form-grid">
           <label>Project name<input name="name" required placeholder="e.g. Riverside 3-Bedroom Home" /></label>
-          <label>Client<select name="client"><option>John Doe</option><option>Amara Mensah</option><option>David Kimani</option></select></label>
-          <label>Type of work<select name="typeChoice" onchange="toggleProjectWorkType(this.value)"><option>New construction</option><option>Renovation</option><option>Roofing</option><option>Interior finishing</option><option>Electrical work</option><option>Plumbing</option><option>Painting</option><option>Landscaping</option><option value="Other">Other</option></select></label>
+          <label>Client name<input name="client" required placeholder="e.g. John Doe" /></label>
+          <label>Client phone<input name="clientPhone" type="tel" maxlength="40" placeholder="+231 77 000 0000" /></label>
+          <label>Client WhatsApp<input name="whatsapp" type="tel" maxlength="40" placeholder="+231 77 000 0000" /></label>
+          <label>Client email<input name="clientEmail" type="email" maxlength="180" placeholder="client@example.com" /></label>
+          <label>Type of work<select name="typeChoice" required><option>New construction</option><option>Renovation</option><option>Roofing</option><option>Interior finishing</option><option>Electrical work</option><option>Plumbing</option><option>Painting</option><option>Landscaping</option><option value="Other">Other</option></select></label>
           <label id="custom-work-type-field" hidden>Custom type of work<input name="type" placeholder="e.g. Solar installation" /></label>
           <label>Contract amount<input name="amount" required type="number" min="0" placeholder="25000" /></label>
           <label>Project location<input name="location" required placeholder="e.g. Paynesville, Monrovia" /></label>
@@ -160,6 +163,38 @@
       </form>
     </section>
   </div>
+  <div class="modal-backdrop" id="estimate-pdf-modal-backdrop" hidden>
+    <section class="modal estimate-pdf-modal" role="dialog" aria-modal="true" aria-labelledby="estimate-pdf-modal-title">
+      <button class="modal-close" id="estimate-pdf-modal-close" aria-label="Close">×</button>
+      <div class="modal-eyebrow">PROJECT DOCUMENT</div>
+      <h2 id="estimate-pdf-modal-title">Upload estimate PDF</h2>
+      <p class="modal-copy">Choose a project and upload its estimate PDF. It will appear in Estimates and Documents.</p>
+      <form id="estimate-pdf-form">
+        <div class="form-grid">
+          <label class="form-wide">Project
+            <select name="projectId" required>
+              <option value="">Choose a project…</option>
+            </select>
+          </label>
+          <label>Project owner / client<input name="owner" readonly placeholder="Selected from project" /></label>
+          <label>Project location<input name="location" readonly placeholder="Selected from project" /></label>
+          <label class="form-wide">Estimate PDF<input name="file" type="file" accept="application/pdf,.pdf" required /><small>PDF files only.</small></label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="button button-ghost" id="estimate-pdf-cancel">Cancel</button>
+          <button class="button button-primary" type="submit">Upload PDF <span>→</span></button>
+        </div>
+      </form>
+    </section>
+  </div>
+  <div class="modal-backdrop estimate-pdf-viewer-backdrop" id="estimate-pdf-viewer-backdrop" hidden>
+    <section class="modal estimate-pdf-viewer" role="dialog" aria-modal="true" aria-labelledby="estimate-pdf-viewer-title">
+      <button class="modal-close" id="estimate-pdf-viewer-close" aria-label="Close PDF viewer">×</button>
+      <div class="modal-eyebrow">ESTIMATE DOCUMENT</div>
+      <h2 id="estimate-pdf-viewer-title">Estimate PDF</h2>
+      <iframe id="estimate-pdf-viewer-frame" title="Uploaded estimate PDF"></iframe>
+    </section>
+  </div>
   <div class="modal-backdrop" id="payment-modal-backdrop" hidden>
     <section class="modal payment-modal" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
       <button class="modal-close" id="payment-modal-close" aria-label="Close">×</button>
@@ -177,6 +212,8 @@
           <label>Payment method<select name="paymentMethod" required><option>Cash</option><option>Bank transfer</option><option>Mobile money</option><option>Card</option><option>Cheque</option></select></label>
           <label>Balance before payment<input name="balanceBefore" readonly /></label>
           <label>Balance after payment<input name="balanceAfter" readonly /></label>
+          <label class="form-wide">Next payment due date<input name="nextPaymentDate" type="date" /><small>Required when a balance remains. The project returns to “Waiting for payment” on this date.</small></label>
+          <label>Next scheduled payment amount<input name="nextPaymentAmount" type="number" min="0.01" step="0.01" /></label>
           <label class="form-wide">Notes<textarea name="notes" rows="3" placeholder="Optional payment reference or note..."></textarea></label>
         </div>
         <div class="form-actions"><button type="button" class="button button-ghost" id="payment-form-cancel">Cancel</button><button class="button button-primary" type="submit">Record payment <span>→</span></button></div>
@@ -369,26 +406,22 @@
       const project = projects.find(item => item.id === projectId);
       if (!project || !document.querySelector('.view-title .eyebrow')?.textContent.includes(project.id)) return;
       const assignments = project.workerAssignments || [];
+      document.querySelector('.project-workers-panel')?.remove();
       const panel = document.createElement('section');
       panel.className = 'panel project-workers-panel';
-      panel.innerHTML = `<div class="panel-header"><div><h2>Workers on this project</h2><p>Everyone assigned to this site and their role.</p></div><strong>${assignments.length}</strong></div>${assignments.length ? `<div class="project-worker-list">${assignments.map(assignment => { const worker = assignment.Worker || assignment.worker || {}; const phone = worker.Phone || worker.phone || ''; return `<div class="project-worker-card"><div class="avatar avatar-dark">${(worker.FullName || worker.fullName || 'W').split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><div><strong>${worker.FullName || worker.fullName || 'Worker'}</strong><span>${assignment.Position || assignment.position || 'Position not recorded'} · ${worker.Skill || worker.skill || 'Skill not specified'}</span><small>${phone || 'No phone recorded'} · ${money(Number(assignment.AmountPaid ?? assignment.amountPaid) || 0)} paid</small></div>${phone ? `<a class="button button-ghost" href="tel:${phone.replace(/[^+\d]/g, '')}">☎ Contact</a>` : ''}</div>`; }).join('')}</div>` : '<div class="empty-state">No workers assigned to this project yet.</div>'}`;
+      panel.innerHTML = `<div class="panel-header"><div><h2>Workers on this project</h2><p>Everyone assigned to this site and their role.</p></div><div class="project-worker-actions"><strong>${assignments.length}</strong><button class="button button-primary" type="button" data-add-worker-to-project="${project.id}">＋ Add worker</button></div></div>${assignments.length ? `<div class="project-worker-list">${assignments.map(assignment => { const worker = assignment.Worker || assignment.worker || {}; const phone = worker.Phone || worker.phone || ''; return `<div class="project-worker-card"><div class="avatar avatar-dark">${(worker.FullName || worker.fullName || 'W').split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><div><strong>${worker.FullName || worker.fullName || 'Worker'}</strong><span>${assignment.Position || assignment.position || 'Position not recorded'} · ${worker.Skill || worker.skill || 'Skill not specified'}</span><small>${phone || 'No phone recorded'} · ${money(Number(assignment.AmountPaid ?? assignment.amountPaid) || 0)} paid</small></div>${phone ? `<a class="button button-ghost" href="tel:${phone.replace(/[^+\d]/g, '')}">☎ Contact</a>` : ''}</div>`; }).join('')}</div>` : '<div class="empty-state">No workers assigned to this project yet.</div>'}`;
       document.querySelector('.main-content .content-wrap')?.appendChild(panel);
     }
-    document.getElementById('project-form').addEventListener('submit', event => {
-      const data = new FormData(event.target);
-      const project = projects[0];
-      if (!project) return;
-      project.type = data.get('typeChoice') === 'Other' ? data.get('type').trim() : data.get('typeChoice');
-      project.location = data.get('location').trim();
-      project.startDate = data.get('startDate');
-      project.expectedCompletionDate = data.get('endDate');
-      project.status = 'Pending payment';
-      setView('projects');
-    });
+    window.appendProjectWorkers = appendProjectWorkers;
   </script>
   <script>
     document.addEventListener('click', event => {
       const row = event.target.closest('#worker-list tr');
+      const assignedWorkerRow = event.target.closest('tr[data-worker-number]');
+      if (assignedWorkerRow && activeView === 'workers') {
+        openAssignedWorkerDetail(assignedWorkerRow.dataset.workerNumber);
+        return;
+      }
       if (row && row.querySelector('.project-name') && activeView === 'workers') {
         openWorkerDetail(row.querySelector('.project-name').textContent);
         setTimeout(() => {
@@ -440,6 +473,27 @@
       paymentPanel.querySelectorAll('[data-worker-receipt]').forEach(button => button.onclick = () => showWorkerReceipt(payments.find(payment => String(payment.id) === button.dataset.workerReceipt)));
       document.getElementById('back-to-workers').addEventListener('click', () => setView('workers'));
     }
+    function openAssignedWorkerDetail(workerNumber) {
+      const worker = projectWorkers.find(item => item.workerNumber === workerNumber);
+      if (!worker) return;
+      const assignments = projects.flatMap(project => (project.workerAssignments || [])
+        .filter(assignment => (assignment.Worker || assignment.worker)?.workerNumber === worker.workerNumber)
+        .map(assignment => ({ project, assignment })));
+      const escapeText = value => String(value ?? 'Not recorded').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+      const phone = worker.phone || worker.Phone || '';
+      const initials = (worker.fullName || worker.FullName || 'Worker').split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+      document.getElementById('app-content').innerHTML = `<div class="view-title"><div><div class="eyebrow">WORKER PROFILE</div><h1>${escapeText(worker.fullName || worker.FullName)}</h1><p>${escapeText(worker.workerNumber)} · ${escapeText(worker.skill || worker.Skill || 'Skill not specified')}</p></div><button class="button button-ghost" id="back-to-workers">← Back to workers</button></div><div class="worker-detail-grid"><section class="panel worker-contact-panel"><div class="avatar avatar-dark">${escapeText(initials)}</div><h2>${escapeText(worker.fullName || worker.FullName)}</h2><p>${escapeText(worker.skill || worker.Skill || 'Skill not specified')}</p><p>${escapeText(phone || 'No phone number recorded')}</p><p>${money(Number(worker.rate ?? worker.workerAmount) || 0)} · ${escapeText(worker.ratePeriod || worker.paymentCondition || 'Daily')}</p>${phone ? `<div class="worker-contact-actions"><a class="button button-primary" href="tel:${escapeText(phone.replace(/[^+\d]/g, ''))}">Call worker</a><a class="button button-ghost" target="_blank" rel="noopener" href="https://wa.me/${escapeText(phone.replace(/\D/g, ''))}">WhatsApp</a></div>` : ''}</section><section class="panel"><div class="panel-header"><div><h2>Assigned projects</h2><p>Projects this worker is currently assigned to.</p></div><strong>${assignments.length}</strong></div><div class="worker-assigned-projects">${assignments.length ? assignments.map(({ project, assignment }) => `<button class="client-project-row" type="button" data-client-project="${escapeText(project.id)}"><span><strong>${escapeText(project.name)}</strong><small>${escapeText(assignment.Position || assignment.position || 'Position not recorded')} · ${escapeText(project.id)}</small></span></button>`).join('') : '<div class="empty-state">No project assignments recorded.</div>'}</div></section></div><section class="panel worker-record-details"><div class="panel-header"><div><h2>Worker information</h2><p>Employment and contact details.</p></div><span class="status ${worker.status === 'Inactive' ? 'status-review' : 'status-progress'}">${escapeText(worker.status || 'Active')}</span></div><div class="worker-info-list"><div><span>Address</span><strong>${escapeText(worker.address)}</strong></div><div><span>Employment type</span><strong>${escapeText(worker.employmentType)}</strong></div><div><span>Date hired</span><strong>${worker.dateHired ? new Date(worker.dateHired).toLocaleDateString() : 'Not recorded'}</strong></div><div><span>Emergency contact</span><strong>${escapeText(worker.emergencyContactName)} · ${escapeText(worker.emergencyContactPhone)}</strong></div><div><span>ID / document</span><strong>${escapeText(worker.idDocumentType)} · ${escapeText(worker.idDocumentNumber)}</strong></div><div><span>Attendance</span><strong>${escapeText(worker.attendanceStatus)}</strong></div><div><span>Work hours</span><strong>${Number(worker.workHours) || 0}</strong></div><div><span>Amount owed</span><strong>${money(Number(worker.amountOwed) || 0)}</strong></div></div></section>`;
+      const photo = document.querySelector('.worker-contact-panel .avatar');
+      if (worker.photoDataUrl?.startsWith('data:image/jpeg;base64,') && photo) {
+        const image = document.createElement('img');
+        image.className = 'worker-passport-photo';
+        image.src = worker.photoDataUrl;
+        image.alt = `${worker.fullName || worker.FullName} passport-size photo`;
+        photo.replaceWith(image);
+      }
+      document.getElementById('back-to-workers').addEventListener('click', () => setView('workers'));
+    }
+    window.openAssignedWorkerDetail = openAssignedWorkerDetail;
   </script>
   <script>
     function openAssignmentModal(workerNumber) {

@@ -1,4 +1,196 @@
 let activeReceiptPayment = null;
+const projectPaymentsStorageKey = 'smart-construction-hub-project-payments';
+let payments = [];
+
+try {
+  const savedPayments = JSON.parse(localStorage.getItem(projectPaymentsStorageKey) || '[]');
+  if (Array.isArray(savedPayments)) {
+    payments = savedPayments.filter(payment =>
+      payment &&
+      payment.project &&
+      typeof payment.project.projectNumber === 'string' &&
+      Number.isFinite(Number(payment.amount))
+    );
+    payments.forEach(payment => {
+      const project = projects.find(item => item.id === payment.project.projectNumber);
+      if (!project) return;
+      project.paid = Math.max(Number(project.paid) || 0, Number(payment.projectPaidAfter) || 0);
+      if (!project.paymentScheduleRestored) {
+        project.nextPaymentDate = payment.nextPaymentDate || '';
+        project.nextPaymentAmount = Number(payment.nextPaymentAmount) || 0;
+        project.paymentScheduleRestored = true;
+      }
+      if (project.paid >= Number(project.amount) || !project.nextPaymentDate) {
+        if (project.status === 'Pending payment') project.status = 'In progress';
+      } else {
+        project.status = project.nextPaymentDate <= localDateString() ? 'Pending payment' : 'In progress';
+      }
+    });
+    projects.forEach(project => { delete project.paymentScheduleRestored; });
+  }
+} catch (error) {
+  console.error('Project payments could not be restored from this browser.', error);
+}
+
+function openPaymentModal(projectId) {
+  const project = projects.find(item => item.id === projectId);
+  const form = document.getElementById('payment-form');
+  if (!project || !form) {
+    window.alert('The selected project could not be loaded for payment.');
+    return;
+  }
+
+  form.reset();
+  const projectSelect = form.elements.project;
+  projectSelect.replaceChildren();
+  projects.forEach(item => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.textContent = `${item.name} · ${item.client}`;
+    projectSelect.appendChild(option);
+  });
+  projectSelect.value = project.id;
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  form.elements.paymentDate.value = now.toISOString().slice(0, 16);
+  form.elements.amount.max = Math.max(0, Number(project.amount) - (Number(project.paid) || 0)).toFixed(2);
+  form.elements.amount.value = '';
+  form.elements.nextPaymentDate.value = '';
+  form.elements.nextPaymentAmount.value = '';
+  form.elements.client.value = project.client || '';
+  form.elements.clientEmail.value = project.clientEmail || '';
+  form.elements.whatsapp.value = project.whatsapp || project.clientPhone || '';
+  updatePaymentBalance(form, project);
+  document.getElementById('payment-modal-backdrop').hidden = false;
+  form.elements.amount.focus();
+}
+
+function updatePaymentBalance(form, project) {
+  const balance = Math.max(0, Number(project.amount) - (Number(project.paid) || 0));
+  const paymentAmount = Number(form.elements.amount.value) || 0;
+  const balanceAfter = Math.max(0, balance - paymentAmount);
+  form.elements.balanceBefore.value = balance.toFixed(2);
+  form.elements.balanceAfter.value = balanceAfter.toFixed(2);
+  form.elements.nextPaymentDate.required = balanceAfter > 0;
+  form.elements.nextPaymentAmount.required = balanceAfter > 0;
+  form.elements.nextPaymentDate.disabled = balanceAfter <= 0;
+  form.elements.nextPaymentAmount.disabled = balanceAfter <= 0;
+  if (balanceAfter <= 0) {
+    form.elements.nextPaymentDate.value = '';
+    form.elements.nextPaymentAmount.value = '';
+  } else {
+    form.elements.nextPaymentAmount.max = balanceAfter.toFixed(2);
+  }
+}
+
+function closePaymentModal() {
+  document.getElementById('payment-modal-backdrop').hidden = true;
+}
+
+const paymentForm = document.getElementById('payment-form');
+paymentForm.elements.project.addEventListener('change', () => {
+  const project = projects.find(item => item.id === paymentForm.elements.project.value);
+  if (!project) return;
+  paymentForm.elements.nextPaymentDate.value = '';
+  paymentForm.elements.nextPaymentAmount.value = '';
+  paymentForm.elements.client.value = project.client || '';
+  paymentForm.elements.clientEmail.value = project.clientEmail || '';
+  paymentForm.elements.whatsapp.value = project.whatsapp || project.clientPhone || '';
+  paymentForm.elements.amount.max = Math.max(0, Number(project.amount) - (Number(project.paid) || 0)).toFixed(2);
+  updatePaymentBalance(paymentForm, project);
+});
+paymentForm.elements.amount.addEventListener('input', () => {
+  const project = projects.find(item => item.id === paymentForm.elements.project.value);
+  if (project) updatePaymentBalance(paymentForm, project);
+});
+paymentForm.elements.paymentDate.addEventListener('change', () => {
+  const project = projects.find(item => item.id === paymentForm.elements.project.value);
+  if (project) updatePaymentBalance(paymentForm, project);
+});
+paymentForm.addEventListener('submit', event => {
+  if (paymentForm.dataset.paymentMode === 'edit') return;
+  event.preventDefault();
+  if (!paymentForm.reportValidity()) return;
+
+  const project = projects.find(item => item.id === paymentForm.elements.project.value);
+  const amount = Number(paymentForm.elements.amount.value);
+  if (!project || !Number.isFinite(amount) || amount <= 0) {
+    window.alert('Select a project and enter a valid payment amount.');
+    return;
+  }
+  const paidBefore = Number(project.paid) || 0;
+  const paidAfter = Math.round((paidBefore + amount) * 100) / 100;
+  if (paidAfter > Number(project.amount) + 0.001) {
+    window.alert('The payment cannot be greater than the project balance.');
+    return;
+  }
+  const remainingBalance = Math.max(0, Number(project.amount) - paidAfter);
+  const nextPaymentDateValue = paymentForm.elements.nextPaymentDate.value;
+  const nextPaymentAmount = Number(paymentForm.elements.nextPaymentAmount.value);
+  if (remainingBalance > 0) {
+    if (!nextPaymentDateValue || !Number.isFinite(nextPaymentAmount) || nextPaymentAmount <= 0 || nextPaymentAmount > remainingBalance) {
+      window.alert('Set a valid next payment date and an amount no greater than the remaining balance.');
+      return;
+    }
+  }
+  const paymentDate = new Date(paymentForm.elements.paymentDate.value);
+  if (Number.isNaN(paymentDate.getTime())) {
+    window.alert('Enter a valid payment date and time.');
+    return;
+  }
+  if (remainingBalance > 0 && nextPaymentDateValue <= paymentForm.elements.paymentDate.value.slice(0, 10)) {
+    window.alert('The next payment date must be after the payment date.');
+    return;
+  }
+  const payment = {
+    id: `local-${Date.now()}`,
+    receiptNumber: `SCH-${String(Date.now()).slice(-8).padStart(6, '0')}`,
+    project: { projectNumber: project.id, name: project.name },
+    projectName: project.name,
+    clientName: project.client,
+    clientEmail: project.clientEmail || '',
+    whatsapp: project.whatsapp || project.clientPhone || '',
+    paymentDate: paymentDate.toISOString(),
+    amount,
+    paymentMethod: paymentForm.elements.paymentMethod.value,
+    notes: paymentForm.elements.notes.value.trim(),
+    projectPaidAfter: paidAfter,
+    nextPaymentDate: remainingBalance > 0 ? nextPaymentDateValue : '',
+    nextPaymentAmount: remainingBalance > 0 ? nextPaymentAmount : 0
+  };
+  const nextPayments = [payment, ...payments];
+
+  try {
+    localStorage.setItem(projectPaymentsStorageKey, JSON.stringify(nextPayments));
+  } catch (error) {
+    console.error('Project payment could not be saved in this browser.', error);
+    window.alert('The payment could not be saved in this browser. Check available storage and try again.');
+    return;
+  }
+
+  payments = nextPayments;
+  project.paid = paidAfter;
+  project.nextPaymentDate = payment.nextPaymentDate;
+  project.nextPaymentAmount = payment.nextPaymentAmount;
+  project.status = payment.nextPaymentDate && payment.nextPaymentDate <= localDateString() ? 'Pending payment' : 'In progress';
+  paymentForm.reset();
+  closePaymentModal();
+  if (activeView === 'payments') setView('payments');
+  showReceipt(payment);
+});
+paymentForm.addEventListener('reset', event => {
+  const form = event.currentTarget;
+  form.dataset.paymentMode = '';
+  form.onsubmit = null;
+});
+document.getElementById('payment-modal-close').addEventListener('click', closePaymentModal);
+document.getElementById('payment-form-cancel').addEventListener('click', closePaymentModal);
+document.getElementById('payment-modal-backdrop').addEventListener('click', event => {
+  if (event.target.id === 'payment-modal-backdrop') closePaymentModal();
+});
+document.getElementById('receipt-modal-backdrop').addEventListener('click', event => {
+  if (event.target.id === 'receipt-modal-backdrop') closeReceipt();
+});
 
 function receiptEscape(value) {
   return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
@@ -47,9 +239,12 @@ function receiptId(payment) {
   return `SCH-${String(Number.isFinite(storedId) && storedId > 0 ? storedId : fallback).padStart(6, '0')}`;
 }
 
+function closeReceipt() {
+  document.getElementById('receipt-modal-backdrop').hidden = true;
+}
+
 function receiptDetails(payment) {
   const project = projects.find(item => item.id === payment.project?.projectNumber || item.name === payment.project?.name || item.name === payment.projectName);
-  const client = clients.find(item => item.name === project?.client || item.name === payment.clientName);
   const amount = Number(payment.amount) || 0;
   const contract = Number(project?.amount) || 0;
   const totalPaid = Number(project?.paid) || 0;
@@ -57,8 +252,8 @@ function receiptDetails(payment) {
   const balance = Math.max(0, contract - totalPaid);
   const customer = project?.client || payment.clientName || 'Customer';
   const projectName = project?.name || payment.project?.name || payment.projectName || 'Construction project';
-  const customerPhone = payment.whatsapp || project?.whatsapp || client?.phone || '+231 __________';
-  const email = payment.clientEmail || project?.clientEmail || client?.email || '';
+  const customerPhone = payment.whatsapp || project?.whatsapp || project?.clientPhone || '+231 __________';
+  const email = payment.clientEmail || project?.clientEmail || '';
   const date = receiptDate(payment.paymentDate || new Date());
   const number = receiptId(payment);
   const paymentMethod = payment.paymentMethod || 'Cash';
@@ -85,8 +280,8 @@ function showReceipt(payment) {
   if (!payment) return;
   activeReceiptPayment = payment;
   const details = receiptDetails(payment);
-  const receiverName = currentUser?.displayName || document.getElementById('profile-name').textContent;
-  const receiverPosition = currentUser?.role || document.getElementById('profile-role').textContent;
+  const receiverName = typeof currentUser !== 'undefined' && currentUser?.displayName || document.getElementById('profile-name')?.textContent || 'Administrator';
+  const receiverPosition = typeof currentUser !== 'undefined' && currentUser?.role || document.getElementById('profile-role')?.textContent || 'Administrator';
   const documentNode = document.getElementById('receipt-content');
   documentNode.innerHTML = `
     <article class="receipt-document">
@@ -174,6 +369,7 @@ function editReceiptPayment(payment) {
   form.elements.amount.value = Number(payment.amount);
   form.elements.paymentMethod.value = payment.paymentMethod || 'Cash';
   form.elements.notes.value = payment.notes || '';
+  form.dataset.paymentMode = 'edit';
   document.getElementById('payment-modal-title').textContent = 'Edit payment';
   form.querySelector('[type="submit"]').textContent = 'Save changes';
   form.onsubmit = event => saveReceiptPaymentEdit(event, payment, project);
@@ -210,7 +406,7 @@ async function saveReceiptPaymentEdit(event, payment, project) {
     document.getElementById('payment-modal-backdrop').hidden = true;
     document.getElementById('payment-modal-title').textContent = 'Record a payment';
     form.querySelector('[type="submit"]').innerHTML = 'Record payment <span>→</span>';
-    if (activeView === 'payments') paymentsView();
+    if (activeView === 'payments') setView('payments');
     showReceipt(payment);
   } catch (error) {
     window.alert(error.message);
