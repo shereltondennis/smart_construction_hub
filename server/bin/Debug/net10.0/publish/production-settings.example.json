@@ -1,0 +1,17 @@
+{
+  "ConnectionStrings": {
+    "ConstructionDatabase": "Server=tcp:YOUR-SERVER.database.windows.net,1433;Initial Catalog=SmartConstructionHub;Persist Security Info=False;User ID=YOUR-DATABASE-USER;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+  },
+  "Frontend": {
+    "Origins": ["https://YOUR-SITE.azurestaticapps.net"]
+  },
+  "Admin": {
+    "Email": "admin@example.com",
+    "DisplayName": "Smart Construction Hub Administrator",
+    "PasswordHash": "BASE64_SALT:BASE64_PBKDF2_HASH"
+  },
+  "DataProtection": {
+    "BlobUri": "https://YOUR-STORAGE.blob.core.windows.net/dataprotection/sch-keys.xml",
+    "KeyIdentifier": "https://YOUR-KEYVAULT.vault.azure.net/keys/sch-cookie-protection/YOUR-KEY-VERSION"
+  }
+}

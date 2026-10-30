@@ -10,20 +10,15 @@ ASP.NET Core 10 Web API backed by SQL Server and Entity Framework Core.
 
 ## Local setup
 
-1. The project uses SQL Server authentication. The login name and server are in `appsettings.json`; its password is intentionally not stored there. Before starting the API, set it for your Windows account:
+1. Local development uses SQL Server Windows Authentication. The API connects as the Windows account running it; no SQL username or password is stored or required. That Windows account must be allowed to connect to the SQL Server instance and create/use the `SmartConstructionHub` database.
+2. Start the API from PowerShell with:
 
 ```powershell
-[Environment]::SetEnvironmentVariable('SCH_SQL_PASSWORD', 'your-password-here', 'User')
+.\server\start-local-api.ps1
 ```
 
-Close and reopen PowerShell after running that command. For the current PowerShell session only, use:
-
-```powershell
-$env:SCH_SQL_PASSWORD = 'your-password-here'
-```
-
-Update `appsettings.json` if your SQL Server instance or login name differs. For the local sample, keep the API in Development mode and set the SQL password as above.
-2. The API creates the configured database and seeds one connected sample project automatically on first start. You can also create it manually with `Database/schema.sql`.
+Keep that window open while using the app. `reset-sql-password.ps1` remains as a compatibility shortcut and now starts the API without asking for a SQL password.
+3. The API creates the configured database and seeds one connected sample project automatically on first start. You can also create it manually with `Database/schema.sql`.
 
 For a migration-based production workflow, use:
 
@@ -33,9 +28,10 @@ dotnet ef migrations add InitialCreate
 dotnet ef database update
 ```
 
-3. Start the API:
+4. To start the API directly instead of using the helper:
 
 ```powershell
+$env:ASPNETCORE_ENVIRONMENT = 'Development'
 dotnet run --urls http://localhost:5050
 ```
 

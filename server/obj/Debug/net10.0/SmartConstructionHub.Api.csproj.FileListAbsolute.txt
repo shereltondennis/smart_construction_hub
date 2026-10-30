@@ -672,3 +672,13 @@ C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\Azure.Security.Key
 C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\Azure.Storage.Blobs.dll
 C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\Azure.Storage.Common.dll
 C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\System.IO.Hashing.dll
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\publish\server\obj\worker-verify\publish\web.config
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\publish\production-settings.example.json
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\publish\server\obj\worker-verify\appsettings.json
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\publish\server\obj\worker-verify\publish\appsettings.json
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\publish\server\obj\worker-verify\publish\SmartConstructionHub.Api.deps.json
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\publish\server\obj\worker-verify\publish\SmartConstructionHub.Api.runtimeconfig.json
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\publish\server\obj\worker-verify\publish\SmartConstructionHub.Api.staticwebassets.endpoints.json
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\publish\server\obj\worker-verify\SmartConstructionHub.Api.deps.json
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\publish\server\obj\worker-verify\SmartConstructionHub.Api.runtimeconfig.json
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\publish\server\obj\worker-verify\SmartConstructionHub.Api.staticwebassets.endpoints.json

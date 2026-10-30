@@ -2,6 +2,9 @@
   "ConnectionStrings": {
     "ConstructionDatabase": "Server=tcp:YOUR-SERVER.database.windows.net,1433;Initial Catalog=SmartConstructionHub;Persist Security Info=False;User ID=YOUR-DATABASE-USER;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
   },
+  "Database": {
+    "UseIntegratedSecurity": false
+  },
   "Frontend": {
     "Origins": ["https://YOUR-SITE.azurestaticapps.net"]
   },
