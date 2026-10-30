@@ -5,11 +5,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 if ($Password.Length -lt 12) {
-    throw 'sd199623years'
+    throw 'Choose an administrator password with at least 12 characters.'
 }
 
 $salt = [byte[]]::new(16)
-[Security.Cryptography.RandomNumberGenerator]::Fill($salt)
+$rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($salt)
 $pbkdf2 = [Security.Cryptography.Rfc2898DeriveBytes]::new(
     $Password,
     $salt,
