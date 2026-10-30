@@ -25,7 +25,7 @@ builder.Host.UseWindowsService();
 var frontendOrigins = builder.Configuration.GetSection("Frontend:Origins").Get<string[]>() ?? [];
 if (builder.Environment.IsDevelopment())
 {
-    frontendOrigins = frontendOrigins.Concat(["http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:8000", "http://127.0.0.1:8000"]).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+    frontendOrigins = frontendOrigins.Concat(["http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:8000", "http://127.0.0.1:8000", "null"]).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 }
 var adminEmail = builder.Configuration["Admin:Email"] ?? Environment.GetEnvironmentVariable("SCH_ADMIN_EMAIL");
 var adminPasswordHash = builder.Configuration["Admin:PasswordHash"] ?? Environment.GetEnvironmentVariable("SCH_ADMIN_PASSWORD_HASH");
@@ -36,16 +36,17 @@ if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPass
 
 var databaseConnection = builder.Configuration.GetConnectionString("ConstructionDatabase")
     ?? throw new InvalidOperationException("The ConstructionDatabase connection string is missing.");
-var databasePassword = Environment.GetEnvironmentVariable("SCH_SQL_PASSWORD");
-if (string.IsNullOrWhiteSpace(databasePassword))
+var useIntegratedDatabaseSecurity = builder.Configuration.GetValue<bool>("Database:UseIntegratedSecurity");
+var databasePassword = useIntegratedDatabaseSecurity ? null : Environment.GetEnvironmentVariable("SCH_SQL_PASSWORD");
+if (!useIntegratedDatabaseSecurity && string.IsNullOrWhiteSpace(databasePassword))
 {
-    throw new InvalidOperationException("Set the SCH_SQL_PASSWORD environment variable before starting the API.");
+    throw new InvalidOperationException("Set SCH_SQL_PASSWORD or enable Database:UseIntegratedSecurity for local Windows Authentication.");
 }
 
 var connectionBuilder = new SqlConnectionStringBuilder(databaseConnection)
 {
-    IntegratedSecurity = false,
-    Password = databasePassword,
+    IntegratedSecurity = useIntegratedDatabaseSecurity,
+    Password = databasePassword ?? string.Empty,
     Encrypt = SqlConnectionEncryptOption.Mandatory,
     TrustServerCertificate = builder.Environment.IsDevelopment()
 };
