@@ -2,20 +2,55 @@
   "version": 4,
   "targets": {
     "net10.0": {
-      "Azure.Core/1.38.0": {
+      "Azure.Core/1.46.2": {
         "type": "package",
         "dependencies": {
-          "Microsoft.Bcl.AsyncInterfaces": "1.1.1",
-          "System.ClientModel": "1.0.0",
-          "System.Memory.Data": "1.0.2"
+          "Microsoft.Bcl.AsyncInterfaces": "8.0.0",
+          "System.ClientModel": "1.4.2",
+          "System.Memory.Data": "6.0.1"
         },
         "compile": {
-          "lib/net6.0/Azure.Core.dll": {
+          "lib/net8.0/Azure.Core.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net6.0/Azure.Core.dll": {
+          "lib/net8.0/Azure.Core.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Azure.Extensions.AspNetCore.DataProtection.Blobs/1.5.1": {
+        "type": "package",
+        "dependencies": {
+          "Azure.Core": "1.46.2",
+          "Azure.Storage.Blobs": "12.24.1",
+          "Microsoft.Bcl.AsyncInterfaces": "8.0.0"
+        },
+        "compile": {
+          "lib/net8.0/Azure.Extensions.AspNetCore.DataProtection.Blobs.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Azure.Extensions.AspNetCore.DataProtection.Blobs.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Azure.Extensions.AspNetCore.DataProtection.Keys/1.2.0": {
+        "type": "package",
+        "dependencies": {
+          "Azure.Core": "1.27.0",
+          "Azure.Security.KeyVault.Keys": "4.2.0"
+        },
+        "compile": {
+          "lib/netstandard2.0/Azure.Extensions.AspNetCore.DataProtection.Keys.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/Azure.Extensions.AspNetCore.DataProtection.Keys.dll": {
             "related": ".xml"
           }
         }
@@ -39,6 +74,55 @@
           }
         }
       },
+      "Azure.Security.KeyVault.Keys/4.2.0": {
+        "type": "package",
+        "dependencies": {
+          "Azure.Core": "1.15.0"
+        },
+        "compile": {
+          "lib/netstandard2.0/Azure.Security.KeyVault.Keys.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/Azure.Security.KeyVault.Keys.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Azure.Storage.Blobs/12.24.1": {
+        "type": "package",
+        "dependencies": {
+          "Azure.Storage.Common": "12.23.0"
+        },
+        "compile": {
+          "lib/net8.0/Azure.Storage.Blobs.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Azure.Storage.Blobs.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Azure.Storage.Common/12.23.0": {
+        "type": "package",
+        "dependencies": {
+          "Azure.Core": "1.44.1",
+          "System.IO.Hashing": "6.0.0"
+        },
+        "compile": {
+          "lib/net8.0/Azure.Storage.Common.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Azure.Storage.Common.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "Humanizer.Core/2.14.1": {
         "type": "package",
         "compile": {
@@ -52,7 +136,7 @@
           }
         }
       },
-      "Microsoft.Bcl.AsyncInterfaces/6.0.0": {
+      "Microsoft.Bcl.AsyncInterfaces/8.0.0": {
         "type": "package",
         "compile": {
           "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll": {
@@ -754,18 +838,18 @@
           "Microsoft.AspNetCore.App"
         ]
       },
-      "System.ClientModel/1.0.0": {
+      "System.ClientModel/1.4.2": {
         "type": "package",
         "dependencies": {
-          "System.Memory.Data": "1.0.2"
+          "System.Memory.Data": "6.0.1"
         },
         "compile": {
-          "lib/net6.0/System.ClientModel.dll": {
+          "lib/net8.0/System.ClientModel.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net6.0/System.ClientModel.dll": {
+          "lib/net8.0/System.ClientModel.dll": {
             "related": ".xml"
           }
         }
@@ -951,17 +1035,36 @@
           }
         }
       },
-      "System.Memory.Data/1.0.2": {
+      "System.IO.Hashing/6.0.0": {
         "type": "package",
         "compile": {
-          "lib/netstandard2.0/System.Memory.Data.dll": {
+          "lib/net6.0/System.IO.Hashing.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/netstandard2.0/System.Memory.Data.dll": {
+          "lib/net6.0/System.IO.Hashing.dll": {
             "related": ".xml"
           }
+        },
+        "build": {
+          "buildTransitive/netcoreapp3.1/_._": {}
+        }
+      },
+      "System.Memory.Data/6.0.1": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/System.Memory.Data.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/System.Memory.Data.dll": {
+            "related": ".xml"
+          }
+        },
+        "build": {
+          "buildTransitive/netcoreapp3.1/_._": {}
         }
       },
       "System.Runtime.Caching/6.0.0": {
@@ -1077,26 +1180,62 @@
     }
   },
   "libraries": {
-    "Azure.Core/1.38.0": {
-      "sha512": "IuEgCoVA0ef7E4pQtpC3+TkPbzaoQfa77HlfJDmfuaJUCVJmn7fT0izamZiryW5sYUFKizsftIxMkXKbgIcPMQ==",
+    "Azure.Core/1.46.2": {
+      "sha512": "HFcvd1besmgBFPIZ7iSFHZOgzGfHTZNTzG8gWYdIP8ZJQySrb+vAdArcmFw7je3kFRMDbbtMoWKNVGj2vvH1sw==",
       "type": "package",
-      "path": "azure.core/1.38.0",
+      "path": "azure.core/1.46.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "CHANGELOG.md",
         "README.md",
-        "azure.core.1.38.0.nupkg.sha512",
+        "azure.core.1.46.2.nupkg.sha512",
         "azure.core.nuspec",
         "azureicon.png",
-        "lib/net461/Azure.Core.dll",
-        "lib/net461/Azure.Core.xml",
+        "lib/net462/Azure.Core.dll",
+        "lib/net462/Azure.Core.xml",
         "lib/net472/Azure.Core.dll",
         "lib/net472/Azure.Core.xml",
         "lib/net6.0/Azure.Core.dll",
         "lib/net6.0/Azure.Core.xml",
+        "lib/net8.0/Azure.Core.dll",
+        "lib/net8.0/Azure.Core.xml",
         "lib/netstandard2.0/Azure.Core.dll",
         "lib/netstandard2.0/Azure.Core.xml"
+      ]
+    },
+    "Azure.Extensions.AspNetCore.DataProtection.Blobs/1.5.1": {
+      "sha512": "8Yy2LMuqdEziikD/Xp64/Tx8o71pG22YK3tKdQ7Y297fg2uaLyWAseOyribQLsSuMH2Ma/YGPB6muJ2I/P6PVA==",
+      "type": "package",
+      "path": "azure.extensions.aspnetcore.dataprotection.blobs/1.5.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "CHANGELOG.md",
+        "README.md",
+        "azure.extensions.aspnetcore.dataprotection.blobs.1.5.1.nupkg.sha512",
+        "azure.extensions.aspnetcore.dataprotection.blobs.nuspec",
+        "azureicon.png",
+        "lib/net8.0/Azure.Extensions.AspNetCore.DataProtection.Blobs.dll",
+        "lib/net8.0/Azure.Extensions.AspNetCore.DataProtection.Blobs.xml",
+        "lib/netstandard2.0/Azure.Extensions.AspNetCore.DataProtection.Blobs.dll",
+        "lib/netstandard2.0/Azure.Extensions.AspNetCore.DataProtection.Blobs.xml"
+      ]
+    },
+    "Azure.Extensions.AspNetCore.DataProtection.Keys/1.2.0": {
+      "sha512": "o+ETLHe5J4x/AB5Pq5cTd/gQt7BP35XH91FcWWNrnfQe9tnGraLb+TclSLPJhBj7sT9IxYcVJwHwaUw0XVu39Q==",
+      "type": "package",
+      "path": "azure.extensions.aspnetcore.dataprotection.keys/1.2.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "CHANGELOG.md",
+        "README.md",
+        "azure.extensions.aspnetcore.dataprotection.keys.1.2.0.nupkg.sha512",
+        "azure.extensions.aspnetcore.dataprotection.keys.nuspec",
+        "azureicon.png",
+        "lib/netstandard2.0/Azure.Extensions.AspNetCore.DataProtection.Keys.dll",
+        "lib/netstandard2.0/Azure.Extensions.AspNetCore.DataProtection.Keys.xml"
       ]
     },
     "Azure.Identity/1.11.4": {
@@ -1113,6 +1252,64 @@
         "azureicon.png",
         "lib/netstandard2.0/Azure.Identity.dll",
         "lib/netstandard2.0/Azure.Identity.xml"
+      ]
+    },
+    "Azure.Security.KeyVault.Keys/4.2.0": {
+      "sha512": "I0e71ZjMQ3bJFBOnZNnKizshvZgd/GOx+m7waAeojbm/2P7j4mp5DXNMAN1nm0/FZaCGGR6fVF5I54El+RtGIg==",
+      "type": "package",
+      "path": "azure.security.keyvault.keys/4.2.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "CHANGELOG.md",
+        "README.md",
+        "azure.security.keyvault.keys.4.2.0.nupkg.sha512",
+        "azure.security.keyvault.keys.nuspec",
+        "lib/netstandard2.0/Azure.Security.KeyVault.Keys.dll",
+        "lib/netstandard2.0/Azure.Security.KeyVault.Keys.xml",
+        "pkgicon.png"
+      ]
+    },
+    "Azure.Storage.Blobs/12.24.1": {
+      "sha512": "479Z9ps9yl9XyhU45bbU2CU4e2B23S6FJiSiL9LpfZHU6eNXXD9Jb6rYdwY+qqmm852RhqICXBpX3Sql4DLBew==",
+      "type": "package",
+      "path": "azure.storage.blobs/12.24.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "CHANGELOG.md",
+        "README.md",
+        "azure.storage.blobs.12.24.1.nupkg.sha512",
+        "azure.storage.blobs.nuspec",
+        "azureicon.png",
+        "lib/net6.0/Azure.Storage.Blobs.dll",
+        "lib/net6.0/Azure.Storage.Blobs.xml",
+        "lib/net8.0/Azure.Storage.Blobs.dll",
+        "lib/net8.0/Azure.Storage.Blobs.xml",
+        "lib/netstandard2.0/Azure.Storage.Blobs.dll",
+        "lib/netstandard2.0/Azure.Storage.Blobs.xml",
+        "lib/netstandard2.1/Azure.Storage.Blobs.dll",
+        "lib/netstandard2.1/Azure.Storage.Blobs.xml"
+      ]
+    },
+    "Azure.Storage.Common/12.23.0": {
+      "sha512": "X/pe1LS3lC6s6MSL7A6FzRfnB6P72rNBt5oSuyan6Q4Jxr+KiN9Ufwqo32YLHOVfPcB8ESZZ4rBDketn+J37Rw==",
+      "type": "package",
+      "path": "azure.storage.common/12.23.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "CHANGELOG.md",
+        "README.md",
+        "azure.storage.common.12.23.0.nupkg.sha512",
+        "azure.storage.common.nuspec",
+        "azureicon.png",
+        "lib/net6.0/Azure.Storage.Common.dll",
+        "lib/net6.0/Azure.Storage.Common.xml",
+        "lib/net8.0/Azure.Storage.Common.dll",
+        "lib/net8.0/Azure.Storage.Common.xml",
+        "lib/netstandard2.0/Azure.Storage.Common.dll",
+        "lib/netstandard2.0/Azure.Storage.Common.xml"
       ]
     },
     "Humanizer.Core/2.14.1": {
@@ -1133,23 +1330,26 @@
         "logo.png"
       ]
     },
-    "Microsoft.Bcl.AsyncInterfaces/6.0.0": {
-      "sha512": "UcSjPsst+DfAdJGVDsu346FX0ci0ah+lw3WRtn18NUwEqRt70HaOQ7lI72vy3+1LxtqI3T5GWwV39rQSrCzAeg==",
+    "Microsoft.Bcl.AsyncInterfaces/8.0.0": {
+      "sha512": "3WA9q9yVqJp222P3x1wYIGDAkpjAku0TMUaaQV22g6L67AI0LdOIrVS7Ht2vJfLHGSPVuqN94vIr15qn+HEkHw==",
       "type": "package",
-      "path": "microsoft.bcl.asyncinterfaces/6.0.0",
+      "path": "microsoft.bcl.asyncinterfaces/8.0.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
         "LICENSE.TXT",
+        "PACKAGE.md",
         "THIRD-PARTY-NOTICES.TXT",
-        "lib/net461/Microsoft.Bcl.AsyncInterfaces.dll",
-        "lib/net461/Microsoft.Bcl.AsyncInterfaces.xml",
+        "buildTransitive/net461/Microsoft.Bcl.AsyncInterfaces.targets",
+        "buildTransitive/net462/_._",
+        "lib/net462/Microsoft.Bcl.AsyncInterfaces.dll",
+        "lib/net462/Microsoft.Bcl.AsyncInterfaces.xml",
         "lib/netstandard2.0/Microsoft.Bcl.AsyncInterfaces.dll",
         "lib/netstandard2.0/Microsoft.Bcl.AsyncInterfaces.xml",
         "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll",
         "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.xml",
-        "microsoft.bcl.asyncinterfaces.6.0.0.nupkg.sha512",
+        "microsoft.bcl.asyncinterfaces.8.0.0.nupkg.sha512",
         "microsoft.bcl.asyncinterfaces.nuspec",
         "useSharedDesignerContext.txt"
       ]
@@ -2398,21 +2598,24 @@
         "swashbuckle.aspnetcore.swaggerui.nuspec"
       ]
     },
-    "System.ClientModel/1.0.0": {
-      "sha512": "I3CVkvxeqFYjIVEP59DnjbeoGNfo/+SZrCLpRz2v/g0gpCHaEMPtWSY0s9k/7jR1rAsLNg2z2u1JRB76tPjnIw==",
+    "System.ClientModel/1.4.2": {
+      "sha512": "goGitN7trB9hoQ01dIpxaSYcruI+lGt/xq471AUv8irFvsIX+4HCqk1pDT/4ZPTLmU6ZUuNzhCb4MJAIwG7+Uw==",
       "type": "package",
-      "path": "system.clientmodel/1.0.0",
+      "path": "system.clientmodel/1.4.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "CHANGELOG.md",
         "DotNetPackageIcon.png",
         "README.md",
+        "analyzers/dotnet/cs/System.ClientModel.SourceGeneration.dll",
         "lib/net6.0/System.ClientModel.dll",
         "lib/net6.0/System.ClientModel.xml",
+        "lib/net8.0/System.ClientModel.dll",
+        "lib/net8.0/System.ClientModel.xml",
         "lib/netstandard2.0/System.ClientModel.dll",
         "lib/netstandard2.0/System.ClientModel.xml",
-        "system.clientmodel.1.0.0.nupkg.sha512",
+        "system.clientmodel.1.4.2.nupkg.sha512",
         "system.clientmodel.nuspec"
       ]
     },
@@ -2656,22 +2859,50 @@
         "system.identitymodel.tokens.jwt.nuspec"
       ]
     },
-    "System.Memory.Data/1.0.2": {
-      "sha512": "JGkzeqgBsiZwKJZ1IxPNsDFZDhUvuEdX8L8BDC8N3KOj+6zMcNU28CNN59TpZE/VJYy9cP+5M+sbxtWJx3/xtw==",
+    "System.IO.Hashing/6.0.0": {
+      "sha512": "Rfm2jYCaUeGysFEZjDe7j1R4x6Z6BzumS/vUT5a1AA/AWJuGX71PoGB0RmpyX3VmrGqVnAwtfMn39OHR8Y/5+g==",
       "type": "package",
-      "path": "system.memory.data/1.0.2",
+      "path": "system.io.hashing/6.0.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "CHANGELOG.md",
-        "DotNetPackageIcon.png",
-        "README.md",
+        "Icon.png",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
+        "buildTransitive/netcoreapp2.0/System.IO.Hashing.targets",
+        "buildTransitive/netcoreapp3.1/_._",
+        "lib/net461/System.IO.Hashing.dll",
+        "lib/net461/System.IO.Hashing.xml",
+        "lib/net6.0/System.IO.Hashing.dll",
+        "lib/net6.0/System.IO.Hashing.xml",
+        "lib/netstandard2.0/System.IO.Hashing.dll",
+        "lib/netstandard2.0/System.IO.Hashing.xml",
+        "system.io.hashing.6.0.0.nupkg.sha512",
+        "system.io.hashing.nuspec",
+        "useSharedDesignerContext.txt"
+      ]
+    },
+    "System.Memory.Data/6.0.1": {
+      "sha512": "yliDgLh9S9Mcy5hBIdZmX6yphYIW3NH+3HN1kV1m7V1e0s7LNTw/tHNjJP4U9nSMEgl3w1TzYv/KA1Tg9NYy6w==",
+      "type": "package",
+      "path": "system.memory.data/6.0.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
+        "buildTransitive/netcoreapp2.0/System.Memory.Data.targets",
+        "buildTransitive/netcoreapp3.1/_._",
         "lib/net461/System.Memory.Data.dll",
         "lib/net461/System.Memory.Data.xml",
+        "lib/net6.0/System.Memory.Data.dll",
+        "lib/net6.0/System.Memory.Data.xml",
         "lib/netstandard2.0/System.Memory.Data.dll",
         "lib/netstandard2.0/System.Memory.Data.xml",
-        "system.memory.data.1.0.2.nupkg.sha512",
-        "system.memory.data.nuspec"
+        "system.memory.data.6.0.1.nupkg.sha512",
+        "system.memory.data.nuspec",
+        "useSharedDesignerContext.txt"
       ]
     },
     "System.Runtime.Caching/6.0.0": {
@@ -2836,6 +3067,8 @@
   },
   "projectFileDependencyGroups": {
     "net10.0": [
+      "Azure.Extensions.AspNetCore.DataProtection.Blobs >= 1.5.1",
+      "Azure.Extensions.AspNetCore.DataProtection.Keys >= 1.2.0",
       "Microsoft.EntityFrameworkCore.Design >= 8.0.18",
       "Microsoft.EntityFrameworkCore.SqlServer >= 8.0.18",
       "Microsoft.Extensions.Hosting.WindowsServices >= 10.0.0",
@@ -2843,7 +3076,7 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\USER\\.nuget\\packages\\": {}
+    "C:\\Users\\CodexSandboxOffline\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
@@ -2851,7 +3084,7 @@
       "projectUniqueName": "C:\\Users\\USER\\smart_construction_hub\\server\\SmartConstructionHub.Api.csproj",
       "projectName": "SmartConstructionHub.Api",
       "projectPath": "C:\\Users\\USER\\smart_construction_hub\\server\\SmartConstructionHub.Api.csproj",
-      "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
+      "packagesPath": "C:\\Users\\CodexSandboxOffline\\.nuget\\packages\\",
       "outputPath": "C:\\Users\\USER\\smart_construction_hub\\server\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
@@ -2861,7 +3094,7 @@
         "net10.0"
       ],
       "sources": {
-        "https://api.nuget.org/v3/index.json": {}
+        "C:\\Users\\USER\\.nuget\\packages": {}
       },
       "frameworks": {
         "net10.0": {
@@ -2887,6 +3120,14 @@
         "framework": "net10.0",
         "targetAlias": "net10.0",
         "dependencies": {
+          "Azure.Extensions.AspNetCore.DataProtection.Blobs": {
+            "target": "Package",
+            "version": "[1.5.1, )"
+          },
+          "Azure.Extensions.AspNetCore.DataProtection.Keys": {
+            "target": "Package",
+            "version": "[1.2.0, )"
+          },
           "Microsoft.EntityFrameworkCore.Design": {
             "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
             "suppressParent": "All",

@@ -9,9 +9,16 @@ public static class DatabaseInitializer
     {
         await db.Database.EnsureCreatedAsync();
         await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('ProjectWorkers', 'Position') IS NULL ALTER TABLE ProjectWorkers ADD Position NVARCHAR(120) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Payments', 'ReceiptCopyFileName') IS NULL ALTER TABLE Payments ADD ReceiptCopyFileName NVARCHAR(260) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Payments', 'ReceiptCopyContentType') IS NULL ALTER TABLE Payments ADD ReceiptCopyContentType NVARCHAR(100) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Payments', 'ReceiptCopyData') IS NULL ALTER TABLE Payments ADD ReceiptCopyData VARBINARY(MAX) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Payments', 'MainBalanceBefore') IS NULL ALTER TABLE Payments ADD MainBalanceBefore DECIMAL(18,2) NOT NULL CONSTRAINT DF_Payments_MainBalanceBefore DEFAULT 0;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Payments', 'MainBalanceAfter') IS NULL ALTER TABLE Payments ADD MainBalanceAfter DECIMAL(18,2) NOT NULL CONSTRAINT DF_Payments_MainBalanceAfter DEFAULT 0;");
         await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'Address') IS NULL ALTER TABLE Workers ADD Address NVARCHAR(300) NULL;");
         await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'EmploymentType') IS NULL ALTER TABLE Workers ADD EmploymentType NVARCHAR(40) NOT NULL CONSTRAINT DF_Workers_EmploymentType DEFAULT N'Full-time';");
         await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'DateHired') IS NULL ALTER TABLE Workers ADD DateHired DATE NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'Position') IS NULL ALTER TABLE Workers ADD Position NVARCHAR(120) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'LastPayAccrualDate') IS NULL ALTER TABLE Workers ADD LastPayAccrualDate DATE NULL;");
         await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'EmergencyContactName') IS NULL ALTER TABLE Workers ADD EmergencyContactName NVARCHAR(160) NULL;");
         await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'EmergencyContactPhone') IS NULL ALTER TABLE Workers ADD EmergencyContactPhone NVARCHAR(40) NULL;");
         await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'IdDocumentType') IS NULL ALTER TABLE Workers ADD IdDocumentType NVARCHAR(80) NULL;");
@@ -22,7 +29,24 @@ public static class DatabaseInitializer
         await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'WorkHours') IS NULL ALTER TABLE Workers ADD WorkHours DECIMAL(18,2) NOT NULL CONSTRAINT DF_Workers_WorkHours DEFAULT 0;");
         await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'AmountOwed') IS NULL ALTER TABLE Workers ADD AmountOwed DECIMAL(18,2) NOT NULL CONSTRAINT DF_Workers_AmountOwed DEFAULT 0;");
         await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('Workers', 'Status') IS NULL ALTER TABLE Workers ADD Status NVARCHAR(20) NOT NULL CONSTRAINT DF_Workers_Status DEFAULT N'Active';");
+        await db.Database.ExecuteSqlRawAsync("IF OBJECT_ID('WorkerAttendance', 'U') IS NULL CREATE TABLE WorkerAttendance (Id INT IDENTITY PRIMARY KEY, WorkerId INT NOT NULL, AttendanceDate DATE NOT NULL, Status NVARCHAR(30) NOT NULL DEFAULT N'Not recorded', WorkHours DECIMAL(18,2) NOT NULL DEFAULT 0, Notes NVARCHAR(500), CONSTRAINT FK_WorkerAttendance_Workers FOREIGN KEY (WorkerId) REFERENCES Workers(Id) ON DELETE CASCADE, CONSTRAINT UQ_WorkerAttendance_Worker_Date UNIQUE (WorkerId, AttendanceDate));");
         await db.Database.ExecuteSqlRawAsync("IF OBJECT_ID('WorkerPayments', 'U') IS NULL CREATE TABLE WorkerPayments (Id INT IDENTITY PRIMARY KEY, WorkerId INT NOT NULL, ProjectId INT NOT NULL, PaymentDate DATETIME2 NOT NULL, Amount DECIMAL(18,2) NOT NULL, PaymentMethod NVARCHAR(40), ReceiptNumber NVARCHAR(80) NOT NULL UNIQUE, Notes NVARCHAR(500), FOREIGN KEY (WorkerId) REFERENCES Workers(Id) ON DELETE CASCADE, FOREIGN KEY (ProjectId) REFERENCES Projects(Id) ON DELETE CASCADE);");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('WorkerPayments', 'ReceiptCopyFileName') IS NULL ALTER TABLE WorkerPayments ADD ReceiptCopyFileName NVARCHAR(260) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('WorkerPayments', 'ReceiptCopyContentType') IS NULL ALTER TABLE WorkerPayments ADD ReceiptCopyContentType NVARCHAR(100) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('WorkerPayments', 'ReceiptCopyData') IS NULL ALTER TABLE WorkerPayments ADD ReceiptCopyData VARBINARY(MAX) NULL;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('WorkerPayments', 'WorkerBalanceBefore') IS NULL ALTER TABLE WorkerPayments ADD WorkerBalanceBefore DECIMAL(18,2) NOT NULL CONSTRAINT DF_WorkerPayments_WorkerBalanceBefore DEFAULT 0;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('WorkerPayments', 'WorkerBalanceAfter') IS NULL ALTER TABLE WorkerPayments ADD WorkerBalanceAfter DECIMAL(18,2) NOT NULL CONSTRAINT DF_WorkerPayments_WorkerBalanceAfter DEFAULT 0;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('WorkerPayments', 'MainBalanceBefore') IS NULL ALTER TABLE WorkerPayments ADD MainBalanceBefore DECIMAL(18,2) NOT NULL CONSTRAINT DF_WorkerPayments_MainBalanceBefore DEFAULT 0;");
+        await db.Database.ExecuteSqlRawAsync("IF COL_LENGTH('WorkerPayments', 'MainBalanceAfter') IS NULL ALTER TABLE WorkerPayments ADD MainBalanceAfter DECIMAL(18,2) NOT NULL CONSTRAINT DF_WorkerPayments_MainBalanceAfter DEFAULT 0;");
+        await db.Database.ExecuteSqlRawAsync("IF OBJECT_ID('CompanyBalances', 'U') IS NULL CREATE TABLE CompanyBalances (Id INT NOT NULL PRIMARY KEY CHECK (Id = 1), Amount DECIMAL(18,2) NOT NULL DEFAULT 0);");
+        await db.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_WorkerPayments_ReceiptNumber' AND object_id = OBJECT_ID('WorkerPayments')) CREATE UNIQUE INDEX UX_WorkerPayments_ReceiptNumber ON WorkerPayments(ReceiptNumber);");
+        if (!await db.CompanyBalances.AnyAsync())
+        {
+            var received = await db.Payments.SumAsync(payment => (decimal?)payment.Amount) ?? 0;
+            var paidToWorkers = await db.WorkerPayments.SumAsync(payment => (decimal?)payment.Amount) ?? 0;
+            db.CompanyBalances.Add(new CompanyBalance { Id = 1, Amount = received - paidToWorkers });
+            await db.SaveChangesAsync();
+        }
 
         if (await db.Clients.AnyAsync())
         {

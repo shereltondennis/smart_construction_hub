@@ -13,8 +13,10 @@ public class ConstructionDbContext(DbContextOptions<ConstructionDbContext> optio
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<Material> Materials => Set<Material>();
     public DbSet<Worker> Workers => Set<Worker>();
+    public DbSet<WorkerAttendance> WorkerAttendance => Set<WorkerAttendance>();
     public DbSet<ProjectWorker> ProjectWorkers => Set<ProjectWorker>();
     public DbSet<WorkerPayment> WorkerPayments => Set<WorkerPayment>();
+    public DbSet<CompanyBalance> CompanyBalances => Set<CompanyBalance>();
     public DbSet<ProjectDocument> Documents => Set<ProjectDocument>();
     public DbSet<ProjectPhoto> Photos => Set<ProjectPhoto>();
 
@@ -27,6 +29,8 @@ public class ConstructionDbContext(DbContextOptions<ConstructionDbContext> optio
         modelBuilder.Entity<EstimateItem>().Property(x => x.Quantity).HasPrecision(18, 3);
         modelBuilder.Entity<EstimateItem>().Property(x => x.UnitPrice).HasPrecision(18, 2);
         modelBuilder.Entity<Payment>().Property(x => x.Amount).HasPrecision(18, 2);
+        modelBuilder.Entity<Payment>().Property(x => x.MainBalanceBefore).HasPrecision(18, 2);
+        modelBuilder.Entity<Payment>().Property(x => x.MainBalanceAfter).HasPrecision(18, 2);
         modelBuilder.Entity<HousePlan>().Property(x => x.BuildingArea).HasPrecision(18, 2);
         modelBuilder.Entity<Material>().Property(x => x.PurchasePrice).HasPrecision(18, 2);
         modelBuilder.Entity<Material>().Property(x => x.QuantityPurchased).HasPrecision(18, 3);
@@ -34,9 +38,16 @@ public class ConstructionDbContext(DbContextOptions<ConstructionDbContext> optio
         modelBuilder.Entity<Worker>().Property(x => x.Rate).HasPrecision(18, 2);
         modelBuilder.Entity<Worker>().Property(x => x.WorkHours).HasPrecision(18, 2);
         modelBuilder.Entity<Worker>().Property(x => x.AmountOwed).HasPrecision(18, 2);
+        modelBuilder.Entity<WorkerAttendance>().Property(x => x.WorkHours).HasPrecision(18, 2);
+        modelBuilder.Entity<WorkerAttendance>().HasIndex(x => new { x.WorkerId, x.AttendanceDate }).IsUnique();
         modelBuilder.Entity<ProjectWorker>().Property(x => x.AmountPaid).HasPrecision(18, 2);
         modelBuilder.Entity<ProjectWorker>().HasKey(x => new { x.ProjectId, x.WorkerId });
         modelBuilder.Entity<WorkerPayment>().Property(x => x.Amount).HasPrecision(18, 2);
+        modelBuilder.Entity<WorkerPayment>().Property(x => x.WorkerBalanceBefore).HasPrecision(18, 2);
+        modelBuilder.Entity<WorkerPayment>().Property(x => x.WorkerBalanceAfter).HasPrecision(18, 2);
+        modelBuilder.Entity<WorkerPayment>().Property(x => x.MainBalanceBefore).HasPrecision(18, 2);
+        modelBuilder.Entity<WorkerPayment>().Property(x => x.MainBalanceAfter).HasPrecision(18, 2);
+        modelBuilder.Entity<CompanyBalance>().Property(x => x.Amount).HasPrecision(18, 2);
         modelBuilder.Entity<WorkerPayment>().HasIndex(x => x.ReceiptNumber).IsUnique();
         modelBuilder.Entity<Project>().HasOne(x => x.Client).WithMany(x => x.Projects).HasForeignKey(x => x.ClientId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<Estimate>().HasMany(x => x.Items).WithOne(x => x.Estimate).HasForeignKey(x => x.EstimateId).OnDelete(DeleteBehavior.Cascade);

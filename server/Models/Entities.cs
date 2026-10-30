@@ -77,9 +77,14 @@ public class Payment
     public Project Project { get; set; } = null!;
     public DateTime PaymentDate { get; set; }
     public decimal Amount { get; set; }
+    public decimal MainBalanceBefore { get; set; }
+    public decimal MainBalanceAfter { get; set; }
     public string? PaymentMethod { get; set; }
     public string? ReceiptNumber { get; set; }
     public string? Notes { get; set; }
+    public string? ReceiptCopyFileName { get; set; }
+    public string? ReceiptCopyContentType { get; set; }
+    public byte[]? ReceiptCopyData { get; set; }
 }
 
 public class Material
@@ -102,6 +107,7 @@ public class Worker
     public string? Phone { get; set; }
     public string? Address { get; set; }
     public string? Skill { get; set; }
+    public string? Position { get; set; }
     public string EmploymentType { get; set; } = "Full-time";
     public DateOnly? DateHired { get; set; }
     public string? EmergencyContactName { get; set; }
@@ -115,9 +121,21 @@ public class Worker
     public decimal Rate { get; set; }
     public string RatePeriod { get; set; } = "Daily";
     public decimal AmountOwed { get; set; }
+    public DateOnly? LastPayAccrualDate { get; set; }
     public string Status { get; set; } = "Active";
     public ICollection<ProjectWorker> Projects { get; set; } = new List<ProjectWorker>();
     public ICollection<WorkerPayment> Payments { get; set; } = new List<WorkerPayment>();
+}
+
+public class WorkerAttendance
+{
+    public int Id { get; set; }
+    public int WorkerId { get; set; }
+    public Worker Worker { get; set; } = null!;
+    public DateOnly AttendanceDate { get; set; }
+    public string Status { get; set; } = "Not recorded";
+    public decimal WorkHours { get; set; }
+    public string? Notes { get; set; }
 }
 
 public class ProjectWorker
@@ -140,9 +158,22 @@ public class WorkerPayment
     public Project Project { get; set; } = null!;
     public DateTime PaymentDate { get; set; }
     public decimal Amount { get; set; }
+    public decimal WorkerBalanceBefore { get; set; }
+    public decimal WorkerBalanceAfter { get; set; }
+    public decimal MainBalanceBefore { get; set; }
+    public decimal MainBalanceAfter { get; set; }
     public string? PaymentMethod { get; set; }
     public string ReceiptNumber { get; set; } = "";
     public string? Notes { get; set; }
+    public string? ReceiptCopyFileName { get; set; }
+    public string? ReceiptCopyContentType { get; set; }
+    public byte[]? ReceiptCopyData { get; set; }
+}
+
+public class CompanyBalance
+{
+    public int Id { get; set; }
+    public decimal Amount { get; set; }
 }
 
 public class ProjectDocument

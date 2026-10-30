@@ -19,9 +19,16 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
       - name: Prepare website files
+        env:
+          SCH_API_BASE_URL: ${{ vars.SCH_API_BASE_URL }}
+          SCH_API_BASE_URL_JSON: ${{ vars.SCH_API_BASE_URL }}
         run: |
           mkdir -p _site
           cp index.html app.js receipt.js logo.png *.css _site/
+          if [ -n "$SCH_API_BASE_URL" ]; then
+            printf 'window.SCH_API_BASE_URL = "%s";\n' "$SCH_API_BASE_URL_JSON" > _site/api-config.js
+            sed -i 's#<script src="app.js" defer></script>#<script src="api-config.js"></script>\n  <script src="app.js" defer></script>#' _site/index.html
+          fi
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

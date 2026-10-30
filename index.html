@@ -9,14 +9,34 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="dashboard-chart.css" />
+  <link rel="stylesheet" href="payment-modal.css" />
+  <link rel="stylesheet" href="receipts.css" />
   <link rel="stylesheet" href="activity-menu.css" />
   <link rel="stylesheet" href="mobile-navigation.css" />
+  <link rel="stylesheet" href="sidebar-scroll.css" />
+  <link rel="stylesheet" href="search.css" />
   <link rel="stylesheet" href="settings.css" />
   <link rel="stylesheet" href="receipt.css" />
   <link rel="stylesheet" href="estimate.css" />
   <link rel="stylesheet" href="worker.css" />
 </head>
 <body>
+  <section class="login-screen" id="admin-login-screen" aria-labelledby="admin-login-title">
+    <div class="login-panel">
+      <img class="login-logo" src="logo.png" alt="" />
+      <div class="eyebrow">SMART CONSTRUCTION HUB</div>
+      <h1 id="admin-login-title">Administrator sign in</h1>
+      <p id="admin-login-copy">Sign in to access the workspace.</p>
+      <form id="admin-login-form" novalidate>
+        <label>Email address<input id="admin-email" name="email" type="email" autocomplete="username" required /></label>
+        <label>Password<input id="admin-password" name="password" type="password" autocomplete="current-password" required minlength="10" /></label>
+        <div class="login-error" id="admin-login-error" role="alert" hidden></div>
+        <button class="button button-primary" id="admin-login-submit" type="submit">Sign in</button>
+      </form>
+      <small id="admin-login-note">Administrator credentials are stored on this device only.</small>
+    </div>
+  </section>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
@@ -33,7 +53,9 @@
         <button class="nav-item" data-view="clients"><span class="nav-icon">◉</span>Clients</button>
         <button class="nav-item" data-view="estimates"><span class="nav-icon">≡</span>Estimates <b class="alert-count">5</b></button>
         <button class="nav-item" data-view="workers"><span class="nav-icon">◉</span>Workers</button>
+        <button class="nav-item" data-view="attendance"><span class="nav-icon">✓</span>Attendance</button>
         <button class="nav-item" data-view="payments"><span class="nav-icon">↗</span>Payments</button>
+        <button class="nav-item" data-view="receipts"><span class="nav-icon">▤</span>Receipts</button>
         <button class="nav-item" data-view="documents"><span class="nav-icon">□</span>Documents</button>
       </nav>
       <div class="sidebar-bottom">
@@ -48,7 +70,12 @@
         <button class="mobile-menu" id="mobile-menu" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">☰</button>
         <div class="breadcrumb"><span>Workspace</span><i>/</i><strong id="breadcrumb-title">SCH Dashboard</strong></div>
         <div class="top-actions">
-          <button class="icon-button" aria-label="Search" id="focus-search">⌕</button>
+          <div class="top-search" id="top-search">
+            <span class="top-search-icon" aria-hidden="true">⌕</span>
+            <input id="global-search-input" type="search" autocomplete="off" aria-label="Search the entire workspace" placeholder="Search projects, clients, workers..." />
+            <span class="top-search-shortcut" aria-hidden="true">Ctrl K</span>
+            <div id="global-search-results" class="global-search-results" role="listbox" aria-label="Search results" hidden></div>
+          </div>
           <button class="icon-button notification" aria-label="Notifications">♢<span></span></button>
           <div class="top-divider"></div>
           <div class="avatar avatar-orange">SD</div>
@@ -210,11 +237,14 @@
           <label>Payment date and time<input name="paymentDate" type="datetime-local" required /></label>
           <label>Amount<input name="amount" type="number" min="0.01" step="0.01" required placeholder="4500.00" /></label>
           <label>Payment method<select name="paymentMethod" required><option>Cash</option><option>Bank transfer</option><option>Mobile money</option><option>Card</option><option>Cheque</option></select></label>
+          <label>Total project amount<input name="totalContract" type="number" readonly /></label>
+          <label>Paid to date<input name="totalPaid" type="number" readonly /></label>
           <label>Balance before payment<input name="balanceBefore" readonly /></label>
           <label>Balance after payment<input name="balanceAfter" readonly /></label>
           <label class="form-wide">Next payment due date<input name="nextPaymentDate" type="date" /><small>Required when a balance remains. The project returns to “Waiting for payment” on this date.</small></label>
           <label>Next scheduled payment amount<input name="nextPaymentAmount" type="number" min="0.01" step="0.01" /></label>
           <label class="form-wide">Notes<textarea name="notes" rows="3" placeholder="Optional payment reference or note..."></textarea></label>
+          <label class="form-wide">Hard-copy paper receipt<input name="receiptCopy" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" /><small>Upload a photo, scan, or PDF of the paper receipt (8 MB maximum).</small></label>
         </div>
         <div class="form-actions"><button type="button" class="button button-ghost" id="payment-form-cancel">Cancel</button><button class="button button-primary" type="submit">Record payment <span>→</span></button></div>
       </form>
@@ -225,11 +255,30 @@
       <button class="modal-close" id="receipt-modal-close" aria-label="Close">×</button>
       <div id="receipt-content"></div>
       <div class="receipt-actions" aria-label="Receipt actions">
+        <button type="button" id="receipt-copy-view" hidden>📎 View paper receipt copy</button>
         <button type="button" id="receipt-print">🖨 Print Receipt</button>
         <button type="button" id="receipt-download">📄 Download PDF</button>
         <button type="button" id="receipt-send">📤 Send to Customer</button>
         <button type="button" id="receipt-share">📱 Share</button>
         <button type="button" id="receipt-edit">✏️ Edit</button>
+      </div>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="payment-choice-backdrop" hidden>
+    <section class="modal payment-choice-modal" role="dialog" aria-modal="true" aria-labelledby="payment-choice-title">
+      <button class="modal-close" id="payment-choice-close" type="button" aria-label="Close">×</button>
+      <div class="modal-eyebrow">PAYMENT RECORD</div>
+      <h2 id="payment-choice-title">Record a payment</h2>
+      <p class="modal-copy">Choose who is paying and select the matching client project or worker.</p>
+      <div class="payment-choice-list">
+        <div class="payment-choice-row">
+          <label>Money received from a client<select id="client-payment-project" required></select></label>
+          <button class="button button-primary" type="button" id="start-client-payment">Receive payment</button>
+        </div>
+        <div class="payment-choice-row">
+          <label>Money paid to a worker<select id="worker-payment-worker" required></select></label>
+          <button class="button button-primary" type="button" id="start-worker-payment">Pay worker</button>
+        </div>
       </div>
     </section>
   </div>
@@ -245,18 +294,19 @@
           <label>Full name<input name="fullName" required placeholder="e.g. James Johnson" /></label>
           <label>Phone number<input name="phone" type="tel" placeholder="+231 888 000 000" /></label>
           <label>Address<input name="address" placeholder="Street, city, county" /></label>
-          <label>Job / skill<input name="skill" required placeholder="Carpenter, mason, plumber..." /></label>
+          <label>Skills<input name="skill" required placeholder="Carpentry, masonry, plumbing..." /></label>
+          <label>Position<input name="workerPosition" required placeholder="Mason, site supervisor..." /></label>
           <label>Employment type<select name="employmentType"><option>Full-time</option><option>Part-time</option><option>Contract</option><option>Temporary</option><option>Casual</option></select></label>
           <label>Pay amount<input name="workerAmount" required type="number" min="0" step="0.01" placeholder="75.00" /></label>
-          <label>Pay frequency<select name="paymentCondition"><option>Daily</option><option>Weekly</option><option>Monthly</option><option>Hourly</option><option>Per project</option></select></label>
-          <label>Date hired<input name="dateHired" type="date" /></label>
+          <label>Pay frequency<select name="paymentCondition"><option>Daily</option><option>Weekly</option><option>Monthly</option><option>Hourly</option><option>Per project</option></select><small>Daily and weekly pay accrue Monday–Saturday from the hire date. Sundays are excluded; weekly pay is split across six workdays.</small></label>
+          <label>Date hired<input name="dateHired" type="date" required /></label>
           <label>Emergency contact name<input name="emergencyContactName" placeholder="Contact full name" /></label>
           <label>Emergency contact phone<input name="emergencyContactPhone" type="tel" placeholder="+231 888 000 000" /></label>
           <label>ID / document type<input name="idDocumentType" placeholder="National ID, passport..." /></label>
           <label>ID / document number<input name="idDocumentNumber" /></label>
           <div class="worker-photo-field form-wide"><span class="worker-photo-label">Passport-size photo</span><div class="worker-photo-control"><div class="worker-photo-frame"><img id="worker-photo-preview" alt="Worker passport photo preview" hidden /><span id="worker-photo-placeholder">Photo preview</span></div><div class="worker-photo-inputs"><input id="worker-photo-input" type="file" accept="image/jpeg,image/png,image/webp" /><small>Choose a clear portrait photo. It will be fitted to the passport frame.</small><button type="button" class="text-button" id="worker-photo-clear" hidden>Remove photo</button></div></div></div>
-          <label>Project assigned<select name="projectId"><option value="">No project assigned yet</option></select></label>
-          <label>Worker position<input name="position" placeholder="Mason, site supervisor..." /></label>
+          <label>Project assigned<select name="projectId"><option value="">No project assigned yet</option></select><small>You can assign this worker to a project later.</small></label>
+          <label>Project position<input name="position" placeholder="Role on this project, if different" /></label>
           <label>Attendance status<select name="attendanceStatus"><option>Not recorded</option><option>Present</option><option>Absent</option><option>On leave</option></select></label>
           <label>Work hours<input name="workHours" type="number" min="0" step="0.25" value="0" /></label>
           <label>Amount owed<input name="amountOwed" type="number" min="0" step="0.01" value="0" /></label>
@@ -264,6 +314,17 @@
           <label class="form-wide">Attendance notes<textarea name="attendanceNotes" rows="2" placeholder="Attendance and work notes..."></textarea></label>
         </div>
         <div class="form-actions"><button type="button" class="button button-ghost" id="worker-form-cancel">Cancel</button><button class="button button-primary" type="submit">Save worker <span>→</span></button></div>
+      </form>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="record-edit-modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="record-edit-modal-title">
+      <button class="modal-close" id="record-edit-modal-close" type="button" aria-label="Close">×</button>
+      <div class="modal-eyebrow">RECORD DETAILS</div>
+      <h2 id="record-edit-modal-title">Edit record</h2>
+      <p class="modal-copy">Update saved contact or employment information.</p>
+      <form id="record-edit-form"><div class="form-grid" data-record-edit-fields></div>
+        <div class="form-actions"><button type="button" class="button button-ghost" id="record-edit-cancel">Cancel</button><button class="button button-primary" type="submit">Save changes <span>→</span></button></div>
       </form>
     </section>
   </div>
@@ -289,14 +350,29 @@
       <button class="modal-close" id="worker-payment-modal-close" aria-label="Close">×</button>
       <div class="modal-eyebrow">WORKER PAYMENT</div>
       <h2 id="worker-payment-modal-title">Record worker payment</h2>
-      <p class="modal-copy">Record the amount paid, project, payment method, and exact payment time.</p>
+      <p class="modal-copy">Worker information and the amount currently owed fill in from the selected worker. Enter the details for this payment.</p>
       <form id="worker-payment-form">
+        <p class="worker-payment-loading" data-worker-payment-loading role="status">Updating the worker’s accrued pay balance…</p>
         <div class="form-grid">
+          <label>Worker<input name="workerName" readonly /></label>
+          <label>Worker ID<input name="workerNumber" readonly /></label>
+          <label>Phone number<input name="workerPhone" readonly /></label>
+          <label>Skill<input name="workerSkill" readonly /></label>
+          <label>Position<input name="workerPosition" readonly /></label>
+          <label>Employment type<input name="workerEmploymentType" readonly /></label>
+          <label>Pay rate<input name="workerRate" readonly /></label>
+          <label>Date hired<input name="workerDateHired" readonly /></label>
+          <label class="form-wide">Address<input name="workerAddress" readonly /></label>
           <label>Project<select name="project" required></select></label>
           <label>Payment date and time<input name="paymentDate" type="datetime-local" required /></label>
           <label>Amount<input name="amount" type="number" min="0.01" step="0.01" required placeholder="500.00" /></label>
           <label>Payment method<select name="paymentMethod" required><option>Cash</option><option>Bank transfer</option><option>Mobile money</option><option>Card</option><option>Cheque</option></select></label>
+          <label>Total amount owed<input name="totalOwed" type="number" readonly /></label>
+          <label>Balance after payment<input name="balanceAfter" type="number" readonly /></label>
+          <label>Main balance before payment<input name="mainBalanceBefore" type="number" readonly /></label>
+          <label>Main balance after payment<input name="mainBalanceAfter" type="number" readonly /></label>
           <label class="form-wide">Notes<textarea name="notes" rows="3" placeholder="Optional payment note..."></textarea></label>
+          <label class="form-wide">Copy of hard-copy worker receipt<input name="receiptCopy" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" /><small>Upload a photo, scan, or PDF of the paper receipt (8 MB maximum).</small></label>
         </div>
         <div class="form-actions"><button type="button" class="button button-ghost" id="worker-payment-form-cancel">Cancel</button><button class="button button-primary" type="submit">Save payment <span>→</span></button></div>
       </form>
@@ -306,6 +382,7 @@
     <section class="modal receipt-modal" role="dialog" aria-modal="true" aria-labelledby="worker-receipt-title">
       <button class="modal-close" id="worker-receipt-modal-close" aria-label="Close">×</button>
       <div id="worker-receipt-content"></div>
+      <button type="button" class="button button-ghost" id="worker-receipt-copy-view" hidden>📎 View paper receipt copy</button>
       <div class="form-actions receipt-actions"><button type="button" class="button button-ghost" id="worker-receipt-close">Done</button><button type="button" class="button button-primary" id="worker-receipt-print">Print receipt <span>↗</span></button></div>
     </section>
   </div>
@@ -315,12 +392,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       const estimatePrint = document.getElementById('estimate-print');
       if (estimatePrint) estimatePrint.addEventListener('click', () => window.print());
-      if (typeof setView === 'function') {
-        setView('overview');
-      }
-      if (typeof hydrateFromApi === 'function') {
-        hydrateFromApi();
-      }
     });
   </script>
   <script>
@@ -450,7 +521,7 @@
       if (!worker) return;
       const phone = worker.phone || '';
       const assignedProjects = (worker.projects || []).map(item => ({ name: item.project?.name || item.project?.projectNumber || item.projectName, position: item.position || 'Position not recorded' })).filter(item => item.name);
-      document.getElementById('app-content').innerHTML = `<div class="view-title"><div><div class="eyebrow">WORKER PROFILE</div><h1>${worker.fullName}</h1><p>${worker.workerNumber} · ${worker.skill || 'Skill not specified'}</p></div><button class="button button-ghost" id="back-to-workers">← Back to workers</button></div><div class="worker-detail-grid"><section class="panel worker-contact-panel"><div class="avatar avatar-dark">${worker.fullName.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><h2>${worker.fullName}</h2><p>${worker.skill || 'Skill not specified'}</p><p>${phone || 'No phone number recorded'}</p><p>${money(Number(worker.rate) || 0)} · ${worker.ratePeriod || 'Daily'}</p><div class="worker-contact-actions">${phone ? `<a class="button button-primary" href="tel:${phone.replace(/[^+\d]/g, '')}">☎ Call worker</a><a class="button button-ghost" target="_blank" rel="noopener" href="https://wa.me/${phone.replace(/[^\d]/g, '')}">WhatsApp</a>` : '<span class="project-client">Add a phone number to contact this worker.</span>'}</div></section><section class="panel"><div class="panel-header"><div><h2>Worker information</h2><p>Contact and pay details for administration.</p></div><strong>${worker.workerNumber}</strong></div><div class="worker-info-list"><div><span>Full name</span><strong>${worker.fullName}</strong></div><div><span>Phone / WhatsApp</span><strong>${phone || 'Not recorded'}</strong></div><div><span>Skill</span><strong>${worker.skill || 'Not specified'}</strong></div><div><span>Rate</span><strong>${money(Number(worker.rate) || 0)} per ${worker.ratePeriod || 'day'}</strong></div></div><h3 class="worker-projects-heading">Assigned projects</h3><div class="client-project-list">${assignedProjects.length ? assignedProjects.map(project => `<div class="client-project-row"><strong>${project}</strong></div>`).join('') : '<div class="empty-state">No projects assigned yet.</div>'}</div></section></div>`;
+      document.getElementById('app-content').innerHTML = `<div class="view-title"><div><div class="eyebrow">WORKER PROFILE</div><h1>${worker.fullName}</h1><p>${worker.workerNumber} · ${worker.skill || 'Skill not specified'}</p></div><div><button class="button button-primary" type="button" data-edit-worker="${worker.id || worker.workerNumber}">Edit worker</button> <button class="button button-ghost" id="back-to-workers">← Back to workers</button></div></div><div class="worker-detail-grid"><section class="panel worker-contact-panel"><div class="avatar avatar-dark">${worker.fullName.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><h2>${worker.fullName}</h2><p>${worker.skill || 'Skill not specified'}</p><p>${phone || 'No phone number recorded'}</p><p>${money(Number(worker.rate) || 0)} · ${worker.ratePeriod || 'Daily'}</p><div class="worker-contact-actions">${phone ? `<a class="button button-primary" href="tel:${phone.replace(/[^+\d]/g, '')}">☎ Call worker</a><a class="button button-ghost" target="_blank" rel="noopener" href="https://wa.me/${phone.replace(/[^\d]/g, '')}">WhatsApp</a>` : '<span class="project-client">Add a phone number to contact this worker.</span>'}</div></section><section class="panel"><div class="panel-header"><div><h2>Worker information</h2><p>Contact and pay details for administration.</p></div><strong>${worker.workerNumber}</strong></div><div class="worker-info-list"><div><span>Full name</span><strong>${worker.fullName}</strong></div><div><span>Phone / WhatsApp</span><strong>${phone || 'Not recorded'}</strong></div><div><span>Skill</span><strong>${worker.skill || 'Not specified'}</strong></div><div><span>Rate</span><strong>${money(Number(worker.rate) || 0)} per ${worker.ratePeriod || 'day'}</strong></div></div><h3 class="worker-projects-heading">Assigned projects</h3><div class="client-project-list">${assignedProjects.length ? assignedProjects.map(project => `<div class="client-project-row"><strong>${project}</strong></div>`).join('') : '<div class="empty-state">No projects assigned yet.</div>'}</div></section></div>`;
       const workerAvatar = document.querySelector('.worker-contact-panel .avatar');
       if (worker.photoDataUrl?.startsWith('data:image/jpeg;base64,') && workerAvatar) {
         const workerPhoto = document.createElement('img');
@@ -482,7 +553,7 @@
       const escapeText = value => String(value ?? 'Not recorded').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
       const phone = worker.phone || worker.Phone || '';
       const initials = (worker.fullName || worker.FullName || 'Worker').split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
-      document.getElementById('app-content').innerHTML = `<div class="view-title"><div><div class="eyebrow">WORKER PROFILE</div><h1>${escapeText(worker.fullName || worker.FullName)}</h1><p>${escapeText(worker.workerNumber)} · ${escapeText(worker.skill || worker.Skill || 'Skill not specified')}</p></div><button class="button button-ghost" id="back-to-workers">← Back to workers</button></div><div class="worker-detail-grid"><section class="panel worker-contact-panel"><div class="avatar avatar-dark">${escapeText(initials)}</div><h2>${escapeText(worker.fullName || worker.FullName)}</h2><p>${escapeText(worker.skill || worker.Skill || 'Skill not specified')}</p><p>${escapeText(phone || 'No phone number recorded')}</p><p>${money(Number(worker.rate ?? worker.workerAmount) || 0)} · ${escapeText(worker.ratePeriod || worker.paymentCondition || 'Daily')}</p>${phone ? `<div class="worker-contact-actions"><a class="button button-primary" href="tel:${escapeText(phone.replace(/[^+\d]/g, ''))}">Call worker</a><a class="button button-ghost" target="_blank" rel="noopener" href="https://wa.me/${escapeText(phone.replace(/\D/g, ''))}">WhatsApp</a></div>` : ''}</section><section class="panel"><div class="panel-header"><div><h2>Assigned projects</h2><p>Projects this worker is currently assigned to.</p></div><strong>${assignments.length}</strong></div><div class="worker-assigned-projects">${assignments.length ? assignments.map(({ project, assignment }) => `<button class="client-project-row" type="button" data-client-project="${escapeText(project.id)}"><span><strong>${escapeText(project.name)}</strong><small>${escapeText(assignment.Position || assignment.position || 'Position not recorded')} · ${escapeText(project.id)}</small></span></button>`).join('') : '<div class="empty-state">No project assignments recorded.</div>'}</div></section></div><section class="panel worker-record-details"><div class="panel-header"><div><h2>Worker information</h2><p>Employment and contact details.</p></div><span class="status ${worker.status === 'Inactive' ? 'status-review' : 'status-progress'}">${escapeText(worker.status || 'Active')}</span></div><div class="worker-info-list"><div><span>Address</span><strong>${escapeText(worker.address)}</strong></div><div><span>Employment type</span><strong>${escapeText(worker.employmentType)}</strong></div><div><span>Date hired</span><strong>${worker.dateHired ? new Date(worker.dateHired).toLocaleDateString() : 'Not recorded'}</strong></div><div><span>Emergency contact</span><strong>${escapeText(worker.emergencyContactName)} · ${escapeText(worker.emergencyContactPhone)}</strong></div><div><span>ID / document</span><strong>${escapeText(worker.idDocumentType)} · ${escapeText(worker.idDocumentNumber)}</strong></div><div><span>Attendance</span><strong>${escapeText(worker.attendanceStatus)}</strong></div><div><span>Work hours</span><strong>${Number(worker.workHours) || 0}</strong></div><div><span>Amount owed</span><strong>${money(Number(worker.amountOwed) || 0)}</strong></div></div></section>`;
+      document.getElementById('app-content').innerHTML = `<div class="view-title"><div><div class="eyebrow">WORKER PROFILE</div><h1>${escapeText(worker.fullName || worker.FullName)}</h1><p>${escapeText(worker.workerNumber)} · ${escapeText(worker.skill || worker.Skill || 'Skill not specified')}</p></div><div><button class="button button-primary" type="button" data-edit-worker="${worker.id || worker.Id || worker.workerNumber || worker.WorkerNumber}">Edit worker</button> <button class="button button-ghost" id="back-to-workers">← Back to workers</button></div></div><div class="worker-detail-grid"><section class="panel worker-contact-panel"><div class="avatar avatar-dark">${escapeText(initials)}</div><h2>${escapeText(worker.fullName || worker.FullName)}</h2><p>${escapeText(worker.skill || worker.Skill || 'Skill not specified')}</p><p>${escapeText(phone || 'No phone number recorded')}</p><p>${money(Number(worker.rate ?? worker.workerAmount) || 0)} · ${escapeText(worker.ratePeriod || worker.paymentCondition || 'Daily')}</p>${phone ? `<div class="worker-contact-actions"><a class="button button-primary" href="tel:${escapeText(phone.replace(/[^+\d]/g, ''))}">Call worker</a><a class="button button-ghost" target="_blank" rel="noopener" href="https://wa.me/${escapeText(phone.replace(/\D/g, ''))}">WhatsApp</a></div>` : ''}</section><section class="panel"><div class="panel-header"><div><h2>Assigned projects</h2><p>Projects this worker is currently assigned to.</p></div><strong>${assignments.length}</strong></div><div class="worker-assigned-projects">${assignments.length ? assignments.map(({ project, assignment }) => `<button class="client-project-row" type="button" data-client-project="${escapeText(project.id)}"><span><strong>${escapeText(project.name)}</strong><small>${escapeText(assignment.Position || assignment.position || 'Position not recorded')} · ${escapeText(project.id)}</small></span></button>`).join('') : '<div class="empty-state">No project assignments recorded.</div>'}</div></section></div><section class="panel worker-record-details"><div class="panel-header"><div><h2>Worker information</h2><p>Employment and contact details.</p></div><span class="status ${worker.status === 'Inactive' ? 'status-review' : 'status-progress'}">${escapeText(worker.status || 'Active')}</span></div><div class="worker-info-list"><div><span>Address</span><strong>${escapeText(worker.address)}</strong></div><div><span>Employment type</span><strong>${escapeText(worker.employmentType)}</strong></div><div><span>Date hired</span><strong>${worker.dateHired ? new Date(worker.dateHired).toLocaleDateString() : 'Not recorded'}</strong></div><div><span>Emergency contact</span><strong>${escapeText(worker.emergencyContactName)} · ${escapeText(worker.emergencyContactPhone)}</strong></div><div><span>ID / document</span><strong>${escapeText(worker.idDocumentType)} · ${escapeText(worker.idDocumentNumber)}</strong></div><div><span>Attendance</span><strong>${escapeText(worker.attendanceStatus)}</strong></div><div><span>Work hours</span><strong>${Number(worker.workHours) || 0}</strong></div><div><span>Amount owed</span><strong>${money(Number(worker.amountOwed) || 0)}</strong></div></div></section>`;
       const photo = document.querySelector('.worker-contact-panel .avatar');
       if (worker.photoDataUrl?.startsWith('data:image/jpeg;base64,') && photo) {
         const image = document.createElement('img');
@@ -530,33 +601,217 @@
     document.getElementById('assignment-modal-backdrop').onclick = event => { if (event.target.id === 'assignment-modal-backdrop') closeAssignmentModal(); };
   </script>
   <script>
-    function openWorkerPaymentModal(workerNumber) {
-      const worker = workers.find(item => item.workerNumber === workerNumber);
+    const workerPaymentArchiveKey = 'smart-construction-hub-worker-payments';
+    let workers = [];
+    let workerPayments = [];
+    let mainBalance = 0;
+    try {
+      const savedWorkerPayments = JSON.parse(localStorage.getItem(workerPaymentArchiveKey) || '[]');
+      if (Array.isArray(savedWorkerPayments)) workerPayments = savedWorkerPayments;
+    } catch (error) { console.warn('Saved worker receipts could not be loaded.', error); }
+    window.workerPayments = workerPayments;
+    window.setWorkerRecords = records => { workers = Array.isArray(records) ? records : []; window.workerRecords = workers; };
+    function openPaymentChoices() {
+      const projectSelect = document.getElementById('client-payment-project');
+      const workerSelect = document.getElementById('worker-payment-worker');
+      projectSelect.innerHTML = projects.map(project => `<option value="${project.id}">${project.name} · ${project.client}</option>`).join('');
+      const availableWorkers = workers.length ? workers : projectWorkers;
+      workerSelect.innerHTML = availableWorkers.map(worker => `<option value="${worker.workerNumber || worker.WorkerNumber}">${worker.fullName || worker.FullName} · ${worker.workerNumber || worker.WorkerNumber}</option>`).join('');
+      document.getElementById('start-client-payment').disabled = projects.length === 0;
+      document.getElementById('start-worker-payment').disabled = availableWorkers.length === 0;
+      if (!projects.length) projectSelect.innerHTML = '<option value="">No client projects available</option>';
+      if (!availableWorkers.length) workerSelect.innerHTML = '<option value="">No workers available</option>';
+      document.getElementById('payment-choice-backdrop').hidden = false;
+      projectSelect.focus();
+    }
+    function closePaymentChoices() { document.getElementById('payment-choice-backdrop').hidden = true; }
+    document.getElementById('start-client-payment').onclick = () => {
+      const projectId = document.getElementById('client-payment-project').value;
+      closePaymentChoices();
+      if (projectId) openPaymentModal(projectId);
+    };
+    document.getElementById('start-worker-payment').onclick = () => {
+      const workerNumber = document.getElementById('worker-payment-worker').value;
+      closePaymentChoices();
+      if (workerNumber) openWorkerPaymentModal(workerNumber);
+    };
+    document.getElementById('payment-choice-close').onclick = closePaymentChoices;
+    document.getElementById('payment-choice-backdrop').onclick = event => { if (event.target.id === 'payment-choice-backdrop') closePaymentChoices(); };
+    window.openPaymentChoices = openPaymentChoices;
+    async function openWorkerPaymentModal(workerNumber) {
+      const selectedWorker = [...workers, ...projectWorkers].find(item => String(item.workerNumber || item.WorkerNumber) === String(workerNumber));
+      let worker = selectedWorker && {
+        ...selectedWorker,
+        id: selectedWorker.id ?? selectedWorker.Id,
+        workerNumber: selectedWorker.workerNumber || selectedWorker.WorkerNumber,
+        fullName: selectedWorker.fullName || selectedWorker.FullName,
+        amountOwed: selectedWorker.amountOwed ?? selectedWorker.AmountOwed,
+        phone: selectedWorker.phone || selectedWorker.Phone || '',
+        address: selectedWorker.address || selectedWorker.Address || '',
+        skill: selectedWorker.skill || selectedWorker.Skill || '',
+        position: selectedWorker.position || selectedWorker.Position || '',
+        employmentType: selectedWorker.employmentType || selectedWorker.EmploymentType || '',
+        rate: selectedWorker.rate ?? selectedWorker.Rate,
+        ratePeriod: selectedWorker.ratePeriod || selectedWorker.RatePeriod || '',
+        dateHired: selectedWorker.dateHired || selectedWorker.DateHired || ''
+      };
       const form = document.getElementById('worker-payment-form');
-      if (!worker) return;
+      if (!worker) {
+        window.alert('Select a worker from the list before starting a payment.');
+        return;
+      }
       form.reset();
+      form.elements.workerName.value = worker.fullName;
+      form.elements.workerNumber.value = worker.workerNumber;
+      form.elements.workerPhone.value = worker.phone;
+      form.elements.workerSkill.value = worker.skill;
+      form.elements.workerPosition.value = worker.position;
+      form.elements.workerEmploymentType.value = worker.employmentType;
+      form.elements.workerRate.value = worker.rate == null ? '' : `${money(Number(worker.rate) || 0)} · ${worker.ratePeriod || 'Pay rate'}`;
+      form.elements.workerDateHired.value = worker.dateHired ? new Date(`${String(worker.dateHired).slice(0, 10)}T00:00:00`).toLocaleDateString() : '';
+      form.elements.workerAddress.value = worker.address;
+      const initialOwed = Number(worker.amountOwed) || 0;
+      form.elements.totalOwed.value = initialOwed.toFixed(2);
+      form.elements.amount.value = initialOwed > 0 ? initialOwed.toFixed(2) : '';
+      const initialNow = new Date(); initialNow.setMinutes(initialNow.getMinutes() - initialNow.getTimezoneOffset());
+      form.elements.paymentDate.value = initialNow.toISOString().slice(0, 16);
+      form.querySelector('button[type="submit"]').disabled = true;
+      form.querySelector('[data-worker-payment-loading]').hidden = false;
+      form.querySelector('[data-worker-payment-loading]').textContent = 'Updating the worker’s accrued pay balance…';
+      document.getElementById('worker-payment-modal-backdrop').hidden = false;
+      let latestPayLoaded = false;
+      try {
+        const accrualResponse = await fetch(`${API_BASE}/workers/accrue?throughDate=${encodeURIComponent(localDateString())}`, { method: 'POST' });
+        if (!accrualResponse.ok) throw new Error('The worker’s latest pay could not be calculated.');
+        const workersResponse = await fetch(`${API_BASE}/workers`);
+        if (!workersResponse.ok) throw new Error('The worker’s updated pay balance could not be loaded.');
+        const refreshedWorkers = await workersResponse.json();
+        window.setWorkerRecords?.(refreshedWorkers);
+        const refreshedWorker = refreshedWorkers.find(item =>
+          String(item.id ?? item.Id) === String(worker.id) ||
+          String(item.workerNumber || item.WorkerNumber) === String(worker.workerNumber)
+        );
+        if (!refreshedWorker) throw new Error('The selected worker could not be found after updating their pay.');
+        worker = Object.assign(worker, refreshedWorker, {
+          id: refreshedWorker.id ?? refreshedWorker.Id,
+          workerNumber: refreshedWorker.workerNumber || refreshedWorker.WorkerNumber,
+          fullName: refreshedWorker.fullName || refreshedWorker.FullName,
+          amountOwed: refreshedWorker.amountOwed ?? refreshedWorker.AmountOwed,
+          phone: refreshedWorker.phone || refreshedWorker.Phone || '',
+          address: refreshedWorker.address || refreshedWorker.Address || '',
+          skill: refreshedWorker.skill || refreshedWorker.Skill || '',
+          position: refreshedWorker.position || refreshedWorker.Position || '',
+          employmentType: refreshedWorker.employmentType || refreshedWorker.EmploymentType || '',
+          rate: refreshedWorker.rate ?? refreshedWorker.Rate,
+          ratePeriod: refreshedWorker.ratePeriod || refreshedWorker.RatePeriod || '',
+          dateHired: refreshedWorker.dateHired || refreshedWorker.DateHired || ''
+        });
+        latestPayLoaded = true;
+        const currentProfileName = document.querySelector('#app-content .view-title h1')?.textContent?.trim();
+        if (currentProfileName === worker.fullName) openWorkerDetail(worker.workerNumber);
+        const balanceResponse = await fetch(`${API_BASE}/company-balance`);
+        if (balanceResponse.ok) {
+          const balanceRecord = await balanceResponse.json();
+          mainBalance = Number(balanceRecord.amount ?? balanceRecord.Amount) || 0;
+        } else {
+          mainBalance = Number(window.companyBalance?.amount) || 0;
+        }
+      } catch (error) {
+        if (!latestPayLoaded) {
+          form.querySelector('[data-worker-payment-loading]').textContent = 'Could not refresh the worker’s pay balance. Close this form and try again.';
+          window.alert(error.message || 'The worker’s latest pay balance could not be loaded.');
+          return;
+        }
+        mainBalance = Number(window.companyBalance?.amount) || 0;
+      }
+      form.reset();
+      form.elements.workerName.value = worker.fullName;
+      form.elements.workerNumber.value = worker.workerNumber;
+      form.elements.workerPhone.value = worker.phone;
+      form.elements.workerSkill.value = worker.skill;
+      form.elements.workerPosition.value = worker.position;
+      form.elements.workerEmploymentType.value = worker.employmentType;
+      form.elements.workerRate.value = worker.rate == null ? '' : `${money(Number(worker.rate) || 0)} · ${worker.ratePeriod || 'Pay rate'}`;
+      form.elements.workerDateHired.value = worker.dateHired ? new Date(`${String(worker.dateHired).slice(0, 10)}T00:00:00`).toLocaleDateString() : '';
+      form.elements.workerAddress.value = worker.address;
       form.elements.project.innerHTML = projects.map(project => `<option value="${project.id}">${project.name} · ${project.client}</option>`).join('');
+      const workerProjectNames = (worker.projects || worker.Projects || []).map(assignment => {
+        const relatedProject = assignment.project || assignment.Project;
+        return relatedProject?.name || relatedProject?.Name || '';
+      }).filter(Boolean);
+      const assignedProject = projects.find(project =>
+        workerProjectNames.includes(project.name) ||
+        (project.workerAssignments || []).some(assignment => {
+          const assignedWorker = assignment.Worker || assignment.worker || {};
+          return String(assignment.WorkerId ?? assignment.workerId ?? assignedWorker.id ?? assignedWorker.Id ?? '') === String(worker.id) ||
+            String(assignedWorker.workerNumber || assignedWorker.WorkerNumber || '') === String(worker.workerNumber);
+        })
+      );
+      if (assignedProject) form.elements.project.value = assignedProject.id;
       const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
       form.elements.paymentDate.value = now.toISOString().slice(0, 16);
+      const amountOwed = Number(worker.amountOwed) || 0;
+      form.elements.amount.value = amountOwed > 0 ? amountOwed.toFixed(2) : '';
+      updateWorkerPaymentBalance(worker, form);
+      form.elements.amount.oninput = () => updateWorkerPaymentBalance(worker, form);
       form.onsubmit = event => saveWorkerPayment(event, worker);
+      form.querySelector('button[type="submit"]').disabled = false;
+      form.querySelector('[data-worker-payment-loading]').hidden = true;
       document.getElementById('worker-payment-modal-backdrop').hidden = false;
       form.elements.amount.focus();
     }
     function closeWorkerPaymentModal() { document.getElementById('worker-payment-modal-backdrop').hidden = true; }
+    function updateWorkerPaymentBalance(worker, form) {
+      const totalOwed = Number(worker.amountOwed ?? worker.AmountOwed) || 0;
+      const amount = Number(form.elements.amount.value) || 0;
+      form.elements.totalOwed.value = totalOwed.toFixed(2);
+      form.elements.balanceAfter.value = Math.max(0, totalOwed - amount).toFixed(2);
+      form.elements.mainBalanceBefore.value = mainBalance.toFixed(2);
+      form.elements.mainBalanceAfter.value = (mainBalance - amount).toFixed(2);
+    }
     async function saveWorkerPayment(event, worker) {
       event.preventDefault();
       const data = new FormData(event.target);
       const project = projects.find(item => item.id === data.get('project'));
-      const payment = { workerId: worker.id, projectId: project.apiId, workerName: worker.fullName, projectName: project.name, paymentDate: new Date(data.get('paymentDate')).toISOString(), amount: Number(data.get('amount')), paymentMethod: data.get('paymentMethod'), notes: data.get('notes').trim(), receiptNumber: `WRC-${Date.now().toString().slice(-8)}` };
+      let receiptCopy = null;
+      try { receiptCopy = await window.readReceiptCopy(event.target.elements.receiptCopy.files[0]); }
+      catch (error) { window.alert(error.message); return; }
+      const payment = { workerId: worker.id, projectId: project.apiId, workerName: worker.fullName, projectName: project.name, paymentDate: new Date(data.get('paymentDate')).toISOString(), amount: Number(data.get('amount')), paymentMethod: data.get('paymentMethod'), notes: data.get('notes').trim(), receiptNumber: `WRC-${Date.now().toString().slice(-8)}`, receiptCopyFileName: receiptCopy?.fileName || null, receiptCopyContentType: receiptCopy?.contentType || null, receiptCopyData: receiptCopy?.data || null };
+      let saved;
       try {
-        if (!payment.workerId || !payment.projectId) throw new Error('local payment');
-        const response = await fetch(`${API_BASE}/worker-payments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workerId: payment.workerId, projectId: payment.projectId, paymentDate: payment.paymentDate, amount: payment.amount, paymentMethod: payment.paymentMethod, notes: payment.notes }) });
-        if (!response.ok) throw new Error('payment failed');
-        const saved = await response.json(); payment.id = saved.id; payment.receiptNumber = saved.receiptNumber; payment.project = { name: project.name };
-      } catch (error) { payment.id = `local-${Date.now()}`; payment.project = { name: project.name }; }
-      worker.amountOwed = Math.max(0, Number(worker.amountOwed) - payment.amount); workerPayments.unshift(payment); closeWorkerPaymentModal(); showWorkerReceipt(payment); openWorkerDetail(worker.workerNumber);
+        if (!payment.workerId || !payment.projectId) throw new Error('Select a worker and project that are saved in the database.');
+        const response = await fetch(`${API_BASE}/worker-payments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workerId: payment.workerId, projectId: payment.projectId, paymentDate: payment.paymentDate, amount: payment.amount, paymentMethod: payment.paymentMethod, notes: payment.notes, receiptCopyFileName: payment.receiptCopyFileName, receiptCopyContentType: payment.receiptCopyContentType, receiptCopyData: payment.receiptCopyData }) });
+        if (!response.ok) {
+          let detail = '';
+          try { const payload = await response.json(); detail = payload.message || payload.title || ''; } catch { detail = await response.text(); }
+          throw new Error(detail || `Server rejected the payment (${response.status}).`);
+        }
+        saved = await response.json(); payment.id = saved.id; payment.receiptNumber = saved.receiptNumber; payment.project = { name: project.name };
+      } catch (error) { window.alert(error.message || 'Payment could not be saved. Check the API connection and try again.'); return; }
+      worker.amountOwed = Number(saved.workerBalanceAfter ?? saved.WorkerBalanceAfter ?? Math.max(0, Number(worker.amountOwed) - payment.amount));
+      const currentWorkerRecord = workers.find(item =>
+        String(item.id ?? item.Id) === String(worker.id) ||
+        String(item.workerNumber || item.WorkerNumber) === String(worker.workerNumber)
+      );
+      if (currentWorkerRecord) {
+        currentWorkerRecord.amountOwed = worker.amountOwed;
+        currentWorkerRecord.AmountOwed = worker.amountOwed;
+      }
+      mainBalance = Number(saved.mainBalanceAfter ?? saved.MainBalanceAfter ?? (mainBalance - payment.amount));
+      window.companyBalance = { amount: mainBalance };
+      document.querySelectorAll('[data-main-balance]').forEach(balance => { balance.textContent = money(mainBalance); });
+      payment.workerBalanceBefore = Number(saved.workerBalanceBefore ?? saved.WorkerBalanceBefore ?? 0);
+      payment.workerBalanceAfter = Number(saved.workerBalanceAfter ?? saved.WorkerBalanceAfter ?? worker.amountOwed);
+      payment.mainBalanceBefore = Number(saved.mainBalanceBefore ?? saved.MainBalanceBefore ?? 0);
+      payment.mainBalanceAfter = Number(saved.mainBalanceAfter ?? saved.MainBalanceAfter ?? mainBalance);
+      payment.project = { name: project.name };
+      dashboardWorkerPayments = [payment, ...dashboardWorkerPayments];
+      workerPayments.unshift(payment); window.workerPayments = workerPayments;
+      closeWorkerPaymentModal(); showWorkerReceipt(payment); openWorkerDetail(worker.workerNumber);
     }
-    function showWorkerReceipt(payment) { document.getElementById('worker-receipt-content').innerHTML = `<div class="receipt-brand"><div class="modal-eyebrow">SMART CONSTRUCTION HUB</div><h2 id="worker-receipt-title">Worker payment receipt</h2><span>Official digital record</span></div><div class="receipt-meta"><div><span>Receipt number</span><strong>${payment.receiptNumber}</strong></div><div><span>Date and time</span><strong>${new Date(payment.paymentDate).toLocaleString()}</strong></div></div><div class="receipt-party"><div><span>Paid to</span><strong>${payment.worker?.fullName || payment.workerName}</strong></div><div><span>Project</span><strong>${payment.project?.name || payment.projectName}</strong></div><div><span>Payment method</span><strong>${payment.paymentMethod || 'Not specified'}</strong></div></div><div class="receipt-total"><span>Amount paid</span><strong>${money(Number(payment.amount))}</strong></div>${payment.notes ? `<p class="receipt-note">Note: ${payment.notes}</p>` : ''}<p class="receipt-thanks">Payment recorded successfully.</p>`; document.getElementById('worker-receipt-modal-backdrop').hidden = false; }
+    function showWorkerReceipt(payment) { document.getElementById('worker-receipt-content').innerHTML = `<div class="receipt-brand"><div class="modal-eyebrow">SMART CONSTRUCTION HUB</div><h2 id="worker-receipt-title">Worker payment receipt</h2><span>Official digital record</span></div><div class="receipt-meta"><div><span>Receipt number</span><strong>${payment.receiptNumber}</strong></div><div><span>Date and time</span><strong>${new Date(payment.paymentDate).toLocaleString()}</strong></div></div><div class="receipt-party"><div><span>Paid to</span><strong>${payment.worker?.fullName || payment.workerName}</strong></div><div><span>Project</span><strong>${payment.project?.name || payment.projectName}</strong></div><div><span>Payment method</span><strong>${payment.paymentMethod || 'Not specified'}</strong></div></div><div class="receipt-total"><span>Amount paid</span><strong>${money(Number(payment.amount))}</strong></div><div class="receipt-party"><div><span>Worker balance after payment</span><strong>${money(Number(payment.workerBalanceAfter ?? payment.WorkerBalanceAfter ?? 0))}</strong></div><div><span>Main balance after payment</span><strong>${money(Number(payment.mainBalanceAfter ?? payment.MainBalanceAfter ?? 0))}</strong></div></div>${payment.notes ? `<p class="receipt-note">Note: ${payment.notes}</p>` : ''}<p class="receipt-thanks">Payment recorded successfully.</p>`; const copyButton = document.getElementById('worker-receipt-copy-view'); copyButton.hidden = !payment.receiptCopyFileName; copyButton.onclick = () => window.openReceiptCopy?.(payment, 'worker'); document.getElementById('worker-receipt-modal-backdrop').hidden = false; }
+    window.showWorkerReceipt = showWorkerReceipt;
+    window.openWorkerPaymentModal = openWorkerPaymentModal;
     function closeWorkerReceipt() { document.getElementById('worker-receipt-modal-backdrop').hidden = true; }
     document.getElementById('worker-payment-modal-close').onclick = closeWorkerPaymentModal;
     document.getElementById('worker-payment-form-cancel').onclick = closeWorkerPaymentModal;

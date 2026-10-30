@@ -1,0 +1,8 @@
+.receipt-archive-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.receipt-archive-scroll .project-table {
+  min-width: 760px;
+}

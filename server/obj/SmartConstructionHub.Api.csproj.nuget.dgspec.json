@@ -10,7 +10,7 @@
         "projectUniqueName": "C:\\Users\\USER\\smart_construction_hub\\server\\SmartConstructionHub.Api.csproj",
         "projectName": "SmartConstructionHub.Api",
         "projectPath": "C:\\Users\\USER\\smart_construction_hub\\server\\SmartConstructionHub.Api.csproj",
-        "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
+        "packagesPath": "C:\\Users\\CodexSandboxOffline\\.nuget\\packages\\",
         "outputPath": "C:\\Users\\USER\\smart_construction_hub\\server\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
@@ -20,7 +20,7 @@
           "net10.0"
         ],
         "sources": {
-          "https://api.nuget.org/v3/index.json": {}
+          "C:\\Users\\USER\\.nuget\\packages": {}
         },
         "frameworks": {
           "net10.0": {
@@ -46,6 +46,14 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "dependencies": {
+            "Azure.Extensions.AspNetCore.DataProtection.Blobs": {
+              "target": "Package",
+              "version": "[1.5.1, )"
+            },
+            "Azure.Extensions.AspNetCore.DataProtection.Keys": {
+              "target": "Package",
+              "version": "[1.2.0, )"
+            },
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",

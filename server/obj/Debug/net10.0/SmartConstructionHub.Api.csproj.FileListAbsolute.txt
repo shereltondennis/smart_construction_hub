@@ -665,3 +665,10 @@ C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\server\obj\worker-
 C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\server\obj\worker-verify\SmartConstructionHub.Api.deps.json
 C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\server\obj\worker-verify\SmartConstructionHub.Api.runtimeconfig.json
 C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\server\obj\worker-verify\SmartConstructionHub.Api.staticwebassets.endpoints.json
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\production-settings.example.json
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\Azure.Extensions.AspNetCore.DataProtection.Blobs.dll
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\Azure.Extensions.AspNetCore.DataProtection.Keys.dll
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\Azure.Security.KeyVault.Keys.dll
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\Azure.Storage.Blobs.dll
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\Azure.Storage.Common.dll
+C:\Users\USER\smart_construction_hub\server\bin\Debug\net10.0\System.IO.Hashing.dll

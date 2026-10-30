@@ -1,0 +1,94 @@
+#payment-modal-backdrop {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#payment-modal-backdrop .payment-modal {
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#payment-modal-backdrop .form-grid textarea {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 11px;
+  font: 12px 'DM Sans', sans-serif;
+  resize: vertical;
+}
+
+.payment-choice-list {
+  display: grid;
+  gap: 16px;
+}
+
+.payment-choice-row {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfa;
+}
+
+.payment-choice-row label {
+  flex: 1;
+  min-width: 0;
+  color: #69756f;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.payment-choice-row select {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 11px;
+  background: #fff;
+  font: 12px 'DM Sans', sans-serif;
+}
+
+.payment-choice-row .button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+  #payment-modal-backdrop {
+    place-items: start center;
+    padding: 12px;
+  }
+
+  #payment-modal-backdrop .payment-modal {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+    margin: auto 0;
+    padding: 24px 18px;
+  }
+
+  #payment-modal-backdrop .modal-copy {
+    margin-bottom: 18px;
+  }
+
+  #payment-modal-backdrop .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 13px;
+  }
+
+  #payment-modal-backdrop .form-actions {
+    flex-wrap: wrap;
+  }
+
+  .payment-choice-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

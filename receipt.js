@@ -1,6 +1,5 @@
 let activeReceiptPayment = null;
 const projectPaymentsStorageKey = 'smart-construction-hub-project-payments';
-let payments = [];
 
 try {
   const savedPayments = JSON.parse(localStorage.getItem(projectPaymentsStorageKey) || '[]');
@@ -69,6 +68,8 @@ function updatePaymentBalance(form, project) {
   const balance = Math.max(0, Number(project.amount) - (Number(project.paid) || 0));
   const paymentAmount = Number(form.elements.amount.value) || 0;
   const balanceAfter = Math.max(0, balance - paymentAmount);
+  form.elements.totalContract.value = Number(project.amount || 0).toFixed(2);
+  form.elements.totalPaid.value = Number(project.paid || 0).toFixed(2);
   form.elements.balanceBefore.value = balance.toFixed(2);
   form.elements.balanceAfter.value = balanceAfter.toFixed(2);
   form.elements.nextPaymentDate.required = balanceAfter > 0;
@@ -107,7 +108,7 @@ paymentForm.elements.paymentDate.addEventListener('change', () => {
   const project = projects.find(item => item.id === paymentForm.elements.project.value);
   if (project) updatePaymentBalance(paymentForm, project);
 });
-paymentForm.addEventListener('submit', event => {
+paymentForm.addEventListener('submit', async event => {
   if (paymentForm.dataset.paymentMode === 'edit') return;
   event.preventDefault();
   if (!paymentForm.reportValidity()) return;
@@ -142,6 +143,13 @@ paymentForm.addEventListener('submit', event => {
     window.alert('The next payment date must be after the payment date.');
     return;
   }
+  let receiptCopy = null;
+  try {
+    receiptCopy = await window.readReceiptCopy(paymentForm.elements.receiptCopy.files[0]);
+  } catch (error) {
+    window.alert(error.message);
+    return;
+  }
   const payment = {
     id: `local-${Date.now()}`,
     receiptNumber: `SCH-${String(Date.now()).slice(-8).padStart(6, '0')}`,
@@ -154,20 +162,41 @@ paymentForm.addEventListener('submit', event => {
     amount,
     paymentMethod: paymentForm.elements.paymentMethod.value,
     notes: paymentForm.elements.notes.value.trim(),
+    receiptCopyFileName: receiptCopy?.fileName || null,
+    receiptCopyContentType: receiptCopy?.contentType || null,
+    receiptCopyData: receiptCopy?.data || null,
     projectPaidAfter: paidAfter,
     nextPaymentDate: remainingBalance > 0 ? nextPaymentDateValue : '',
     nextPaymentAmount: remainingBalance > 0 ? nextPaymentAmount : 0
   };
-  const nextPayments = [payment, ...payments];
-
   try {
-    localStorage.setItem(projectPaymentsStorageKey, JSON.stringify(nextPayments));
+    if (databaseConnected) {
+      if (!project.databaseId) throw new Error('This project is not linked to a database record. Refresh the page and try again.');
+      const savedPayment = await apiRequest('/payments', {
+        method: 'POST',
+        body: JSON.stringify({
+          projectId: project.databaseId,
+          paymentDate: payment.paymentDate,
+          amount: payment.amount,
+          paymentMethod: payment.paymentMethod,
+          notes: payment.notes,
+          receiptCopyFileName: payment.receiptCopyFileName,
+          receiptCopyContentType: payment.receiptCopyContentType,
+          receiptCopyData: payment.receiptCopyData
+        })
+      });
+      payment.id = savedPayment.id;
+      payment.receiptNumber = savedPayment.receiptNumber;
+    } else {
+      localStorage.setItem(projectPaymentsStorageKey, JSON.stringify([payment, ...payments]));
+    }
   } catch (error) {
-    console.error('Project payment could not be saved in this browser.', error);
-    window.alert('The payment could not be saved in this browser. Check available storage and try again.');
+    console.error('Project payment could not be saved.', error);
+    window.alert(`The payment could not be saved. ${error.message}`);
     return;
   }
 
+  const nextPayments = [payment, ...payments];
   payments = nextPayments;
   project.paid = paidAfter;
   project.nextPaymentDate = payment.nextPaymentDate;
@@ -175,7 +204,7 @@ paymentForm.addEventListener('submit', event => {
   project.status = payment.nextPaymentDate && payment.nextPaymentDate <= localDateString() ? 'Pending payment' : 'In progress';
   paymentForm.reset();
   closePaymentModal();
-  if (activeView === 'payments') setView('payments');
+  if (activeView === 'payments' || activeView === 'receipts') setView(activeView);
   showReceipt(payment);
 });
 paymentForm.addEventListener('reset', event => {
@@ -355,8 +384,12 @@ function showReceipt(payment) {
     }
   };
   document.getElementById('receipt-edit').onclick = () => editReceiptPayment(payment);
+  const receiptCopyButton = document.getElementById('receipt-copy-view');
+  receiptCopyButton.hidden = !payment.receiptCopyFileName;
+  receiptCopyButton.onclick = () => window.openReceiptCopy?.(payment, 'client');
   document.getElementById('receipt-modal-backdrop').hidden = false;
 }
+window.showReceipt = showReceipt;
 
 function editReceiptPayment(payment) {
   const details = receiptDetails(payment);
@@ -369,6 +402,7 @@ function editReceiptPayment(payment) {
   form.elements.amount.value = Number(payment.amount);
   form.elements.paymentMethod.value = payment.paymentMethod || 'Cash';
   form.elements.notes.value = payment.notes || '';
+  form.elements.receiptCopy.disabled = true;
   form.dataset.paymentMode = 'edit';
   document.getElementById('payment-modal-title').textContent = 'Edit payment';
   form.querySelector('[type="submit"]').textContent = 'Save changes';
@@ -393,6 +427,7 @@ async function saveReceiptPaymentEdit(event, payment, project) {
     if (Number.isInteger(Number(payment.id)) && project.apiId) {
       const response = await fetch(`${API_BASE}/payments/${payment.id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated)
       });
@@ -406,7 +441,7 @@ async function saveReceiptPaymentEdit(event, payment, project) {
     document.getElementById('payment-modal-backdrop').hidden = true;
     document.getElementById('payment-modal-title').textContent = 'Record a payment';
     form.querySelector('[type="submit"]').innerHTML = 'Record payment <span>→</span>';
-    if (activeView === 'payments') setView('payments');
+    if (activeView === 'payments' || activeView === 'receipts') setView(activeView);
     showReceipt(payment);
   } catch (error) {
     window.alert(error.message);
@@ -416,6 +451,7 @@ async function saveReceiptPaymentEdit(event, payment, project) {
 document.getElementById('payment-form').addEventListener('reset', event => {
   const form = event.currentTarget;
   form.elements.project.disabled = false;
+  form.elements.receiptCopy.disabled = false;
   document.getElementById('payment-modal-title').textContent = 'Record a payment';
   form.querySelector('[type="submit"]').innerHTML = 'Record payment <span>→</span>';
 });
